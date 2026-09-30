@@ -1,0 +1,132 @@
+"""
+Scrapes German federal election polls ("Sonntagsfrage") from wahlrecht.de.
+
+What this script does:
+- Reads the overview page and collects all polling institutes (Allensbach,
+  Verian, Forsa, Forschungsgruppe Wahlen, GMS, Infratest dimap, INSA, YouGov).
+  Rows/links labeled "Bundestagswahl" (actual election results) are skipped.
+- Takes all surveys from today back to the point where the AfD was founded
+  (6 February 2013), i.e. the cutoff date is 2013-02-06. Older polls are
+  discarded.
+- Drops unnamed (spacer) columns, adds an "Institut" column with the name of
+  the institute.
+- Combines all institutes into one DataFrame and saves it as
+  "surveys.csv".
+
+Usage: run the file; the result is written to data/interims.
+"""
+
+import time
+import bs4
+import pandas as pd
+from io import StringIO
+from urllib.request import Request, urlopen
+from urllib.parse import urljoin
+from pathlib import Path
+
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "interim"
+OVERVIEW_URL = "https://www.wahlrecht.de/umfragen/"
+
+
+def fetch_html(url):
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    return bs4.BeautifulSoup(urlopen(req).read(), "lxml")
+
+
+def parse_table(page):
+    table = page.find("table", class_="wilko")
+    df = pd.read_html(StringIO(str(table)))[0]
+
+    # name the date column first, so it isn't caught by the filter below
+    cols = list(df.columns)
+    cols[0] = "Datum"
+    df.columns = cols
+
+    # drop only the columns without a name
+    df = df.loc[:, ~df.columns.astype(str).str.startswith("Unnamed")]
+
+    return df
+
+
+def get_year_links(page, base_url):
+    links = {}
+    for a in page.find_all("a"):
+        text = a.get_text(strip=True)
+        if text[:4].isdigit() and len(text) in (4, 9) and a.get("href"):
+            links[urljoin(base_url, a["href"])] = text
+    # newest first
+    return sorted(links.items(), key=lambda x: x[1], reverse=True)
+
+
+def get_institutes(overview_url=OVERVIEW_URL):
+    """Institute names + URLs from the header row of the overview table."""
+    page = fetch_html(overview_url)
+    table = page.find("table", class_="wilko")
+    header_row = table.find("tr")
+    institutes = []
+    for a in header_row.find_all("a", href=True):
+        name = a.get_text(" ", strip=True)       # e.g. "Forsch'gr. Wahlen"
+        if name.lower().startswith("bundes"):   # skip result of election
+            continue
+        institutes.append((name, urljoin(overview_url, a["href"])))
+    return institutes
+
+
+def extract_one_institute(url, name, cutoff="2013-02-06"):
+    cutoff = pd.Timestamp(cutoff)
+
+    first_page = fetch_html(url)
+    pages = [first_page]
+    frames = []
+
+    # current page first, then archive pages (newest -> oldest)
+    page_iter = [(None, first_page)]
+    archive_links = get_year_links(first_page, url)
+
+    def process(page):
+        df = parse_table(page)
+        df["_date"] = pd.to_datetime(df["Datum"], format="%d.%m.%Y", errors="coerce")
+        return df
+
+    df = process(first_page)
+    frames.append(df)
+
+    if df["_date"].min() >= cutoff:              # still need older pages
+        for link, label in archive_links:
+            time.sleep(1)
+            df = process(fetch_html(link))
+            frames.append(df)
+            if df["_date"].min() < cutoff:
+                break
+
+    result = pd.concat(frames, ignore_index=True)
+    result = result[result["_date"] >= cutoff].drop(columns="_date")
+    result.insert(0, "Institut", name)           # new first column
+    return result
+
+
+def extract_all(cutoff="2013-02-06", out="surveys.csv"):
+    all_frames = []
+    for name, url in get_institutes():
+        print(f"Fetching {name}: {url}")
+        try:
+            all_frames.append(extract_one_institute(url, name, cutoff))
+        except Exception as e:
+            print(f"  FAILED for {name}: {e}")
+        time.sleep(1)
+
+    combined = pd.concat(all_frames, ignore_index=True)
+
+    # drop rows where Befragte and/or Zeitraum contain "Bundestagswahl" --> we only want surveys in this file
+    mask = pd.Series(False, index=combined.index)
+    for col in ["Befragte", "Zeitraum"]:
+        if col in combined.columns:
+            mask |= combined[col].astype(str).str.contains("Bundestagswahl", case=False, na=False)
+    combined = combined[~mask]
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(OUTPUT_DIR / out, index=False)
+    return combined
+
+
+extract_all(cutoff="2013-02-06")
