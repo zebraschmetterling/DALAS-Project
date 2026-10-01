@@ -72,15 +72,13 @@ def get_institutes(overview_url=OVERVIEW_URL):
     return institutes
 
 
-def extract_one_institute(url, name, cutoff="2013-02-06"):
+def extract_one_institute(url, name, cutoff):
     cutoff = pd.Timestamp(cutoff)
 
     first_page = fetch_html(url)
-    pages = [first_page]
     frames = []
 
     # current page first, then archive pages (newest -> oldest)
-    page_iter = [(None, first_page)]
     archive_links = get_year_links(first_page, url)
 
     def process(page):
@@ -105,7 +103,7 @@ def extract_one_institute(url, name, cutoff="2013-02-06"):
     return result
 
 
-def extract_all(cutoff="2013-02-06", out="surveys.csv"):
+def extract_all(cutoff, out="surveys_bund.csv"):
     all_frames = []
     for name, url in get_institutes():
         print(f"Fetching {name}: {url}")
