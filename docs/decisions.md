@@ -13,3 +13,6 @@ Every preprocessing or modelling choice, with the reason, so it can be defended 
 
 ## 2026-10-06
 - btw_wahlkreise.py: official election results by constituency are extracted from bundeswahlleiterin.de for all federal elections from 2013 onward. Party results are mapped into standard groups (CDU/CSU, SPD, Grüne, FDP, Linke, AfD, FW, BSW), while non-group parties and remaining valid votes are aggregated into Sonstige. Non-constituency rows (e.g. state summaries) are excluded to retain strictly constituency-level granularity (299 constituencies per election). Directly elected candidate parties are parsed from the winning column or determined as fallback via the highest first-vote (Erststimmen) count.
+
+## 2026-10-07
+- btw_gender_age.py: Results of the representative election statistics: Second votes by gender and age group. Only elections from 2013 onward are kept. `CDU` and `CSU` are summed into `CDU/CSU`, and columns are renamed to the project's standard party names (`Grüne`, `Linke`). Values are shares of second votes in percent. `Geschlecht` is kept as in the source (`m`, `w`, `Summe`; from 2021 `m|d|o`, because the source counts diverse persons and persons without gender entry under men), and the overlapping age groups (`Summe`, `>=60`, `60-69`, `>=70`) are all kept, so rows must not be summed across age groups.
