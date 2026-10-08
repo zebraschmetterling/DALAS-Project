@@ -4,3 +4,4 @@ plotly
 dash
 beautifulsoup4
 pymupdf
+pdfplumber
