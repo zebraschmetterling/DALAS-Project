@@ -124,6 +124,12 @@ def extract_all(cutoff, out="surveys_bund.csv"):
             mask |= combined[col].astype(str).str.contains("Bundestagswahl", case=False, na=False)
     combined = combined[~mask]
 
+    # drop the INSA separator row "Zur telefonischen Umfrage (CATI) von INSA"
+    combined = combined[~combined["Befragte"].astype(str).str.contains("Zur telefonischen Umfrage", na=False)]
+
+    # remove the survey method prefix (e.g. "O • ", "T • ", "TOM • ") from Befragte
+    combined["Befragte"] = combined["Befragte"].str.replace(r"^[A-Z]+\s*•\s*", "", regex=True)
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     combined.to_csv(OUTPUT_DIR / out, index=False)
     return combined
