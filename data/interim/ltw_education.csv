@@ -1,0 +1,49 @@
+Bundesland,Datum,Bildungsgruppe,CDU/CSU,SPD,Grüne,FDP,Linke,AfD,FW,BSW,SSW,BIW,Sonstige
+Bayern,2013-09-15,Hauptschulabschluss,58,18,3,,,,8,,,,11
+Bayern,2013-09-15,Mittlere Reife,51,19,7,3,,,9,,,,12
+Bayern,2013-09-15,Hochschulreife,42,20,14,3,,,9,,,,13
+Bayern,2013-09-15,Hochschulabschluss,36,24,19,5,,,8,,,,9
+Hessen,2013-09-22,Hauptschulabschluss,44,36,,4,6,,,,,,5
+Hessen,2013-09-22,Mittlere Reife,40,32,8,,6,5,,,,,7
+Hessen,2013-09-22,Hochschulreife,36,27,14,6,6,4,,,,,7
+Hessen,2013-09-22,Hochschulabschluss,31,27,22,8,4,4,,,,,4
+Hessen,2018-10-28,Hauptschulabschluss,32,29,9,6,4,16,,,,,4
+Hessen,2018-10-28,Mittlere Reife,28,20,15,7,5,17,,,,,8
+Hessen,2018-10-28,Hochschulreife,23,16,26,7,9,11,,,,,8
+Hessen,2018-10-28,Hochschulabschluss,25,18,28,8,8,8,,,,,5
+Thüringen,2019-10-27,Hauptschulabschluss,28,10,,,25,30,,,,,
+Thüringen,2019-10-27,Mittlere Reife,21,7,4,5,27,30,,,,,6
+Thüringen,2019-10-27,Hochschulreife,20,7,9,5,30,22,,,,,7
+Thüringen,2019-10-27,Hochschulabschluss,20,10,9,8,40,10,,,,,4
+Hamburg,2020-02-23,Hauptschulabschluss,11,61,7,4,5,8,,,,,4
+Hamburg,2020-02-23,Mittlere Reife,13,46,16,4,7,8,,,,,7
+Hamburg,2020-02-23,Hochschulreife,10,34,28,5,11,5,,,,,8
+Hamburg,2020-02-23,Hochschulabschluss,11,32,33,6,10,3,,,,,6
+Schleswig-Holstein,2022-05-08,Hauptschulabschluss,50,22,8,5,,5,,,6,,3
+Schleswig-Holstein,2022-05-08,Mittlere Reife,47,17,14,6,,5,,,6,,5
+Schleswig-Holstein,2022-05-08,Hochschulreife,37,14,24,8,,4,,,6,,8
+Schleswig-Holstein,2022-05-08,Hochschulabschluss,36,14,29,8,,,,,4,,7
+Niedersachsen,2022-10-09,Hauptschulabschluss,30,46,6,3,,10,,,,,3
+Niedersachsen,2022-10-09,Mittlere Reife,30,33,9,4,,15,,,,,6
+Niedersachsen,2022-10-09,Hochschulreife,26,28,19,6,4,11,,,,,7
+Niedersachsen,2022-10-09,Hochschulabschluss,25,28,27,5,3,6,,,,,6
+Bremen,2023-05-14,Hauptschulabschluss,27,43,3,3,6,,,,,16,3
+Bremen,2023-05-14,Mittlere Reife,30,31,6,4,7,,,,,16,7
+Bremen,2023-05-14,Hochschulreife,25,27,13,5,13,,,,,7,9
+Bremen,2023-05-14,Hochschulabschluss,24,25,20,6,15,,,,,4,7
+Bayern,2023-10-08,Hauptschulabschluss,44,8,4,,,19,21,,,,4
+Bayern,2023-10-08,Mittlere Reife,39,7,8,,,19,17,,,,7
+Bayern,2023-10-08,Hochschulreife,32,9,20,4,,12,13,,,,11
+Bayern,2023-10-08,Hochschulabschluss,30,11,29,6,,7,10,,,,7
+Sachsen,2024-09-01,Hauptschulabschluss,32,4,,,,44,,11,,,6
+Sachsen,2024-09-01,Mittlere Reife,30,5,,,3,39,,12,,,10
+Sachsen,2024-09-01,Hochschulreife,28,9,6,,7,26,,13,,,10
+Sachsen,2024-09-01,Hochschulabschluss,34,13,12,,7,16,,10,,,8
+Sachsen-Anhalt,2026-09-06,Hauptschulabschluss,17,8,,,6,57,,5,,,4
+Sachsen-Anhalt,2026-09-06,Mittlere Reife,15,8,5,,7,53,,6,,,5
+Sachsen-Anhalt,2026-09-06,Hochschulreife,15,10,13,3,11,37,,6,,,5
+Sachsen-Anhalt,2026-09-06,Hochschulabschluss,22,13,20,4,10,24,,4,,,3
+Mecklenburg-Vorpommern,2026-09-20,Hauptschulabschluss,4,36,,,4,49,,3,,,
+Mecklenburg-Vorpommern,2026-09-20,Mittlere Reife,3,32,3,,5,49,,5,,,4
+Mecklenburg-Vorpommern,2026-09-20,Hochschulreife,4,37,8,,9,30,,5,,,5
+Mecklenburg-Vorpommern,2026-09-20,Hochschulabschluss,7,42,13,,8,20,,6,,,3
