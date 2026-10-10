@@ -1,0 +1,351 @@
+"""
+ltw_results.py - State election (Landtagswahl) results of all German states
+===========================================================================
+
+What this script does
+---------------------
+1. Opens https://www.bundeswahlleiterin.de/service/landtagswahlen.html, finds the
+   link "Ergebnisse früherer Landtagswahlen" (PDF) and downloads it to
+   ../../data/raw/ (relative to this script). If the file already exists, nothing
+   is downloaded. To force a refresh, delete the PDF.
+2. Parses section 3 of the PDF ("... in den Ländern seit 1946"). Every page holds
+   up to two election tables side by side, so each page is split into a left and
+   a right half using word coordinates. The election date is taken from the
+   table headline ("Wahl am DD.MM.YYYY").
+3. Keeps only elections held on or after START_DATE (2013-01-01).
+4. Builds one row per (state, election) with vote shares in percent and writes
+   ../../data/interim/ltw_results.csv.
+
+Output columns
+--------------
+Bundesland | Datum | CDU/CSU | SPD | Grüne | FDP | Linke | AfD | FW | BSW | SSW
+| <any other party with >= 5 % in at least one election since 2013> | Sonstige
+
+Rules
+-----
+* Party name variants are merged (e.g. CSU -> CDU/CSU, PDS -> Linke,
+  GRÜNE/GAL -> Grüne, FDP/DVP -> FDP, BVB/FREIE WÄHLER -> FW).
+* A party that did not run in an election stays EMPTY (not 0 %).
+* "Sonstige" = 100 - sum of all listed columns (rounded to 1 decimal).
+* Excluded: elections in former states (e.g. Württemberg-Baden) and the Berlin
+  city council elections of 1946/48; the Bremen election of 1946 (held as a
+  municipal election under non-comparable conditions).
+* Shares refer to valid votes as printed in the PDF (for states with two votes
+  the PDF's section 3 reports the vote that decides the seat distribution).
+
+Dependencies: pip install requests beautifulsoup4 pdfplumber pandas
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
+
+import pandas as pd
+import pdfplumber
+import requests
+from bs4 import BeautifulSoup
+
+# --------------------------------------------------------------------------- #
+# Configuration
+# --------------------------------------------------------------------------- #
+PAGE_URL = "https://www.bundeswahlleiterin.de/service/landtagswahlen.html"
+LINK_TEXT = "Ergebnisse früherer Landtagswahlen"
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+RAW_DIR = (SCRIPT_DIR / "../../data/raw").resolve()
+INTERIM_DIR = (SCRIPT_DIR / "../../data/interim").resolve()
+OUTPUT_CSV = INTERIM_DIR / "ltw_results.csv"
+
+# Only elections on or after this date (ISO format) are written to the CSV
+START_DATE = "2013-01-01"
+
+# Parties that get a fixed column (in this order)
+FIXED_COLUMNS = ["CDU/CSU", "SPD", "Grüne", "FDP", "Linke", "AfD", "FW", "BSW", "SSW"]
+# Any other party reaching this share (%) in one election gets its own column
+EXTRA_COLUMN_THRESHOLD = 5.0
+
+# Lower-case label as printed in the PDF -> fixed column
+ALIASES = {
+    "CDU/CSU": ["cdu", "csu"],
+    "SPD": ["spd"],
+    "Grüne": ["grüne", "die grünen", "grüne/gal", "gal", "grüne/b 90", "grüne/b",
+              "grüne/al", "bü90/gr/ufv"],
+    "FDP": ["fdp", "f.d.p.", "fdp/dvp"],
+    "Linke": ["die linke", "die linke.", "pds", "pds/ll", "pds-ll", "pds hamburg"],
+    "AfD": ["afd", "afd niedersachsen"],
+    "FW": ["freie wähler", "fw", "fw freie wähler", "bvb/freie wähler",
+           "freie wähl. bremen"],
+    "BSW": ["bsw"],
+    "SSW": ["ssw", "ssv"],
+}
+LABEL_TO_COLUMN = {a: col for col, names in ALIASES.items() for a in names}
+# Aliases that only apply in one state ("AL" = Alternative Liste, Berlin's Greens)
+STATE_LABEL_TO_COLUMN = {("Berlin", "al"): "Grüne"}
+
+# Table headlines containing one of these words are not state parliament elections
+SKIP_HEADLINE_KEYWORDS = ["ehemaligen Land", "Stadtverordnetenversammlung"]
+# Individual elections to skip: (state, ISO date)
+SKIP_ELECTIONS = {("Bremen", "1946-10-13")}
+# Rows that are not parties (independent candidates / voter groups etc.)
+IGNORED_LABELS = {"", "wgr./einzelbew.", "sonstige"}
+
+STATES = {
+    "Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg",
+    "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen",
+    "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt",
+    "Schleswig-Holstein", "Thüringen",
+}
+
+# Regexes
+SECTION_RE = re.compile(r"^3\.\d+\s+Wahlberechtigte")       # page headline of section 3
+HEADLINE_RE = re.compile(r"^Wahl\b.*?\bam\s+(\d{2})\.(\d{2})\.(\d{4})")  # "Wahl am 08.03.2026"
+BLOCK_START_RE = re.compile(r"^Wahlberechtigte")             # first row of each table
+# Party row: "<label> <count> <percent> [seats]"; count uses German thousand dots
+ROW_RE = re.compile(r"^(?P<label>.*?)\s*(?P<count>\d{1,3}(?:\.\d{3})*)\s+(?P<pct>\d{1,3},\d)\b")
+SUPERSCRIPTS = re.compile(r"[¹²³⁰⁴⁵⁶⁷⁸⁹]")
+
+
+# --------------------------------------------------------------------------- #
+# Step 1: find and download the PDF
+# --------------------------------------------------------------------------- #
+def find_pdf_url() -> str:
+    """Return the absolute URL of the 'Ergebnisse früherer Landtagswahlen' PDF."""
+    resp = requests.get(PAGE_URL, timeout=30, headers={"User-Agent": "Mozilla/5.0"})
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.text, "html.parser")
+    for a in soup.find_all("a", href=True):
+        href = a["href"]
+        if not href.lower().split("?")[0].endswith(".pdf"):
+            continue
+        text = f"{a.get_text(' ', strip=True)} {a.get('title', '')}".lower()
+        if LINK_TEXT.lower() in text or "ltw_erg_gesamt" in href:
+            return urljoin(PAGE_URL, href)
+    raise RuntimeError(f"Could not find the PDF link '{LINK_TEXT}' on {PAGE_URL}")
+
+
+def download_pdf() -> Path:
+    """Download the PDF to RAW_DIR unless a file with the same name exists."""
+    url = find_pdf_url()
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    target = RAW_DIR / Path(urlparse(url).path).name
+    if target.exists():
+        print(f"[skip] {target.name} already exists in {RAW_DIR}")
+        return target
+    print(f"[download] {url}")
+    tmp = target.with_suffix(".part")
+    with requests.get(url, stream=True, timeout=120, headers={"User-Agent": "Mozilla/5.0"}) as r:
+        r.raise_for_status()
+        with open(tmp, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1 << 16):
+                f.write(chunk)
+    tmp.rename(target)  # rename only after a complete download
+    print(f"[saved] {target}")
+    return target
+
+
+# --------------------------------------------------------------------------- #
+# Step 2: parse the PDF
+# --------------------------------------------------------------------------- #
+def cluster_lines(words, tol: float = 3.0):
+    """Group words into text lines by vertical position -> list of (top, text)."""
+    words = sorted(words, key=lambda w: (w["top"], w["x0"]))
+    lines, current, ref_top = [], [], None
+    for w in words:
+        if current and abs(w["top"] - ref_top) > tol:
+            lines.append(current)
+            current = []
+        if not current:
+            ref_top = w["top"]
+        current.append(w)
+    if current:
+        lines.append(current)
+    return [(l[0]["top"], " ".join(w["text"] for w in sorted(l, key=lambda w: w["x0"])))
+            for l in lines]
+
+
+def clean_label(label: str) -> str:
+    """Remove footnote superscripts and collapse whitespace."""
+    return re.sub(r"\s+", " ", SUPERSCRIPTS.sub("", label)).strip()
+
+
+def parse_half(words, state: str, page_no: int) -> list[dict]:
+    """Parse all election tables found in one half (left/right) of a page."""
+    lines = cluster_lines(words)
+
+    # Locate table headlines ("Wahl am ...") and table starts ("Wahlberechtigte")
+    events = []  # (line index, kind)
+    for i, (_, text) in enumerate(lines):
+        if HEADLINE_RE.match(text):
+            events.append((i, "headline"))
+        elif BLOCK_START_RE.match(text):
+            events.append((i, "block"))
+    if not events:
+        return []
+
+    # Pair every table with its headline (normally the headline is above the table)
+    pairs = []  # (headline line index, block line index)
+    if events[0][1] == "headline":
+        pending = None
+        for i, kind in events:
+            if kind == "headline":
+                pending = i
+            else:
+                if pending is None:
+                    print(f"  [warn] page {page_no}: table without headline ({state})")
+                else:
+                    pairs.append((pending, i))
+                pending = None
+    else:  # headlines below the tables (fallback)
+        pending = None
+        for i, kind in events:
+            if kind == "block":
+                pending = i
+            elif pending is not None:
+                pairs.append((i, pending))
+                pending = None
+
+    block_starts = sorted(b for _, b in pairs)
+    elections = []
+    for head_i, block_i in pairs:
+        head_text = lines[head_i][1]
+        if head_i > 0:  # headline may wrap onto two lines
+            head_text = lines[head_i - 1][1] + " " + head_text
+        m = HEADLINE_RE.match(lines[head_i][1])
+        date = f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+
+        if any(k in head_text for k in SKIP_HEADLINE_KEYWORDS) or (state, date) in SKIP_ELECTIONS:
+            continue
+
+        # Rows of this table end where the next table starts
+        later = [b for b in block_starts if b > block_i]
+        end_i = later[0] if later else len(lines)
+        table = lines[block_i:end_i]
+
+        # Party rows follow the line "davon:"
+        start = next((k for k, (_, t) in enumerate(table) if t.startswith("davon")), None)
+        if start is None:
+            print(f"  [warn] page {page_no}: no party rows for {state} {date}")
+            continue
+        parties = []
+        for _, text in table[start + 1:]:
+            row = ROW_RE.match(text)
+            if row:
+                parties.append((clean_label(row.group("label")),
+                                float(row.group("pct").replace(",", "."))))
+        elections.append({"state": state, "date": date, "parties": parties})
+    return elections
+
+
+def parse_pdf(pdf_path: Path) -> list[dict]:
+    """Parse section 3 of the PDF and return one dict per election."""
+    elections = []
+    with pdfplumber.open(pdf_path) as pdf:
+        print(f"[parse] {pdf_path.name}: {len(pdf.pages)} pages")
+        for page_no, page in enumerate(pdf.pages, start=1):
+            words = page.extract_words()
+            if not words:
+                continue
+            # Only pages of section 3 ("3.x ... seit 1946"); the state name is the next line
+            full_lines = cluster_lines(words)
+            state = None
+            for k, (_, text) in enumerate(full_lines):
+                if SECTION_RE.match(text) and k + 1 < len(full_lines):
+                    state = full_lines[k + 1][1].strip()
+                    break
+            if state is None:
+                continue
+            if state not in STATES:
+                print(f"  [warn] page {page_no}: unexpected state name '{state}'")
+                continue
+
+            # Two tables per row: split the page into a left and a right half
+            mid = page.width / 2
+            left = [w for w in words if (w["x0"] + w["x1"]) / 2 < mid]
+            right = [w for w in words if (w["x0"] + w["x1"]) / 2 >= mid]
+            for half in (left, right):
+                elections.extend(parse_half(half, state, page_no))
+    print(f"[parse] found {len(elections)} elections")
+    return elections
+
+
+# --------------------------------------------------------------------------- #
+# Step 3: build the table
+# --------------------------------------------------------------------------- #
+def map_party(state: str, label: str) -> str | None:
+    """Return the fixed column of a party label, or None if it has none."""
+    key = label.lower()
+    return STATE_LABEL_TO_COLUMN.get((state, key)) or LABEL_TO_COLUMN.get(key)
+
+
+def build_table(elections: list[dict]) -> pd.DataFrame:
+    # Pass 1: split every election into fixed-column values and other parties
+    prepared, extra_max, extra_name = [], {}, {}
+    for el in elections:
+        fixed, others = {}, {}
+        for label, pct in el["parties"]:
+            col = map_party(el["state"], label)
+            if col:
+                fixed[col] = round(fixed.get(col, 0.0) + pct, 1)  # sum, e.g. Berlin 1990
+            elif label.lower() not in IGNORED_LABELS:
+                key = label.lower()
+                others[key] = others.get(key, 0.0) + pct
+                extra_name.setdefault(key, label)
+        for key, pct in others.items():
+            extra_max[key] = max(extra_max.get(key, 0.0), pct)
+        prepared.append((el, fixed, others))
+
+    # Other parties with >= 5 % somewhere get their own column (before "Sonstige")
+    extra_keys = sorted((k for k, v in extra_max.items() if v >= EXTRA_COLUMN_THRESHOLD),
+                        key=lambda k: -extra_max[k])
+    extra_cols = [extra_name[k] for k in extra_keys]
+    print(f"[table] extra party columns (>= {EXTRA_COLUMN_THRESHOLD} %): {extra_cols}")
+
+    # Pass 2: build the rows
+    rows = []
+    for el, fixed, others in prepared:
+        row = {"Bundesland": el["state"], "Datum": el["date"]}
+        row.update(fixed)  # parties that did not run stay missing -> empty in the CSV
+        for k in extra_keys:
+            if k in others:
+                row[extra_name[k]] = round(others[k], 1)
+        named = sum(fixed.values()) + sum(others[k] for k in extra_keys if k in others)
+        row["Sonstige"] = max(0.0, round(100.0 - named, 1))  # everything not listed
+        if named > 100.5 or not el["parties"]:
+            print(f"  [warn] suspicious result {el['state']} {el['date']}: sum={named:.1f}")
+        rows.append(row)
+
+    columns = ["Bundesland", "Datum"] + FIXED_COLUMNS + extra_cols + ["Sonstige"]
+    df = pd.DataFrame(rows).reindex(columns=columns)
+    df = df.sort_values(["Bundesland", "Datum"]).reset_index(drop=True)
+    dups = df.duplicated(["Bundesland", "Datum"], keep=False)
+    if dups.any():
+        print("  [warn] duplicate (state, date) rows:\n", df.loc[dups, ["Bundesland", "Datum"]])
+    return df
+
+
+# --------------------------------------------------------------------------- #
+# Main
+# --------------------------------------------------------------------------- #
+def main() -> None:
+    pdf_path = download_pdf()
+    elections = parse_pdf(pdf_path)
+    if not elections:
+        sys.exit("No elections could be parsed - the PDF layout may have changed.")
+
+    # Apply the cutoff before building the table, so the extra party columns
+    # (>= 5 %) are also determined from these elections only
+    elections = [el for el in elections if el["date"] >= START_DATE]
+    print(f"[filter] keeping {len(elections)} elections since {START_DATE}")
+    df = build_table(elections)
+
+    INTERIM_DIR.mkdir(parents=True, exist_ok=True)
+    df.to_csv(OUTPUT_CSV, index=False, float_format="%.1f", na_rep="")
+    print(f"[saved] {OUTPUT_CSV} ({len(df)} rows, {df['Bundesland'].nunique()} states)")
+    print(df.groupby("Bundesland").size().to_string())
+
+
+if __name__ == "__main__":
+    main()
