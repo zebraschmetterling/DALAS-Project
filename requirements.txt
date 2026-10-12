@@ -5,3 +5,5 @@ dash
 beautifulsoup4
 pymupdf
 pdfplumber
+torch
+transformers
