@@ -15,6 +15,7 @@ Question and dataset are still preliminary; see `docs/` for the running log.
 - `reports/`         deliverable 1 (two-pager), deliverable 3 (LaTeX report), technical report.
 - `docs/sources.md`  every data source with URL, scrape date, row count.
 - `docs/decisions.md` every preprocessing / modelling choice and why.
+- `docs/data_model.md` target tables of the processed layer (Mermaid ER diagram).
 
 ## Setup
 Uses the course venv in `../.venv`:
@@ -27,4 +28,6 @@ pip install -r requirements.txt
 ## Run
 ```bash
 python -m src.scraping.taschenhirn     # -> data/interim/events_taschenhirn.csv
+python -m src.scraping.tagesschau_archiv --from 2020-03 --to 2020-03   # test one month -> data/interim/tagesschau_archiv.csv
+python -m src.scraping.tagesschau_archiv                               # full run 2013-01 .. now (~1 request/s, 15-30 min)
 ```
