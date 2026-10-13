@@ -38,6 +38,8 @@ python -m src.scraping.wikipedia_crises_en     # -> data/interim/events_wikipedi
 python -m src.scraping.tagesschau_archiv --from 2020-03 --to 2020-03   # test one month -> data/interim/tagesschau_archiv.csv
 python -m src.scraping.tagesschau_archiv                               # full run 2013-01 .. now (~1 request/s, 15-30 min)
 python -m src.scraping.tagesschau_umfrage      # -> data/interim/tagesschau_umfrage-{alter,job,werwas,afd}.csv
+# event salience (needs the archive and the Wikipedia events)
+python -m src.preprocessing.build_event_salience  # -> data/interim/event_salience_{weekly,summary}.csv
 # elections, polls, structure, controls
 python -m src.scraping.btw_strukturdaten       # -> data/interim/btw_strukturdaten.csv
 python -m src.scraping.controls_monthly        # -> data/interim/controls_monthly.csv
