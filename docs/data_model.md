@@ -261,6 +261,7 @@ classification of events, and sentiment (demoted to optional, see decisions 2026
 erDiagram
     events ||--o{ event_salience : "one row per week"
     events }o..o{ polls_weekly : "joined by date window (analysis only)"
+    topics_weekly }o..o{ polls_weekly : "same ISO week (analysis only)"
     election_results }o..o{ polls_weekly : "ground truth for polls (analysis only)"
     election_results }o..|| wahlkreise : "aggregates of"
 
@@ -303,6 +304,14 @@ erDiagram
         float tone "mean sentiment of matching teasers; optional, sentiment not yet scored beyond one test month"
     }
 
+    topics_weekly {
+        string week PK "ISO week"
+        string terms "word stems that burst in the week, with burst factor; from burst.py"
+        int n_teasers "political teasers carrying at least one bursting stem"
+        int n_total "political teasers of the week"
+        float share "n_teasers / n_total"
+    }
+
     votes_by_group {
         date election_date PK
         string level PK "Bund | Land"
@@ -342,6 +351,7 @@ erDiagram
 | `polls_weekly` | one row per ISO week | `surveys_bund.csv`, `regierungszufriedenheit.csv`, `controls_monthly.csv` | Q1 outcome (all parties) and controls |
 | `events` | one row per event | `events_wikipedia_jahr.csv` (the other three event scrapers were evaluated and dropped, decisions 2026-10-20) | Q1 treatments |
 | `event_salience` | one row per event and week | `events`, `tagesschau_archiv.csv`, `tagesschau_sentiment.csv` | Q1 exposure. Built by `build_event_salience.py`, currently in `data/interim/event_salience_weekly.csv` plus a per-event summary `event_salience_summary.csv` (terms used, peak_share, baseline_share, salience, flag); candidate for processed |
+| `topics_weekly` | one row per ISO week | `tagesschau_archiv.csv` via `burst.py` | Q1 second, coarser treatment set: topics that dominated German news in a week but have no Wikipedia event, e.g. domestic debates. Not yet built |
 | `votes_by_group` | one row per election, level, group type, group, party | `btw_gender_age.csv`, `btw_education.csv`, `ltw_age.csv`, `ltw_gender.csv`, `ltw_education.csv`, `tagesschau_umfrage-{alter,job,werwas,afd}.csv` | Q2 descriptive trend, flows between parties within a group |
 | `election_results` | one row per election, level, bundesland, party | `btw_results.csv`, `ltw_results.csv` | ground truth vs polls; Q1 and Q2 context |
 | `wahlkreise` | one row per Wahlkreis and election | `btw_wahlkreise.csv` (Erst- und Zweitstimmen, Direktmandat), `btw_strukturdaten.csv` (join on constituency name after dash normalisation, or number) | Q2 regression, map, direct mandates |
@@ -354,6 +364,7 @@ erDiagram
 - **Monthly controls** are carried forward to the weeks of the month they cover. This is stated wherever they are used.
 - **Salience** is a share within the week, never a count, because the archive grows roughly tenfold between 2013 and 2025. `n_match` and `n_total` are kept so small denominators are visible. One row is one calendar week; `weeks_from_event` only aligns events on a common axis (week 0 = event week) so their coverage curves can be compared.
 - **Event summaries** are derived from `event_salience`, not stored on `events`, so there is one definition: `salience` = peak share in week 0 or +1 minus the mean share of weeks -4 to -1. Match terms are the stems of the event text that burst in the event week (see decisions 2026-10-13), stored per event in `terms` with their burst factor.
+- **Two views on events, used asymmetrically.** Wikipedia gives discrete, dated events with a sentence; the archive gives articles. A Wikipedia event with no bursting coverage (972 of 1,269 day-dated events in the prototype) keeps its row with salience about zero: it did not register in German news and serves as the comparison group. A topic that dominates the archive but has no Wikipedia row (typically a domestic debate) cannot be turned into a dated event without hand-entry, so it is kept at week grain in `topics_weekly`. Wikipedia events are the clean treatments; burst topics are a second, coarser treatment set and are interpreted more cautiously.
 - **Events are never hand-entered.** Every row comes from the German Wikipedia year pages and carries its URL, permalink, fetch time, raw text and the raw date fragment. Keywords (`stichworte`) are the Wikipedia link titles inside the entry, not written by us. AfD-internal events are out of scope by decision; domestic policy debates are to be detected from the tagesschau archive. Classification into international and national is still open; the candidate rule is the Wikipedia sub-subsection (D-A-CH = national), which only exists in some years (33 rows), so most rows would stay empty rather than be guessed.
 - **`votes_by_group`** replaces the five wide interim tables with one long table with a `party` column. Group labels are kept as printed; harmonisation (e.g. 16-29 vs 18-29) is an analysis decision.
 - **`wahlkreise`** gives 299 observations per federal election instead of 16 states, which is what makes a regression of party share on constituency characteristics possible, and drives the map in the dashboard.
