@@ -18,39 +18,179 @@ Every file is written by exactly one scraper in `src/scraping/`, from a raw down
 Row counts as of 2026-10-20; sources, URLs and scrape dates are in `docs/sources.md`.
 
 ```mermaid
-flowchart LR
-    subgraph outcome [Outcome: party preference over time]
-        SB[surveys_bund.csv<br/>3305 polls, 8 institutes, 2013-02 .. 2026-10]
-        SL[surveys_land.csv<br/>275 state polls, 14 states]
-    end
-    subgraph truth [Ground truth: election results]
-        BR[btw_results.csv<br/>68 rows: 16 states + Bund x 4 elections]
-        LR_[ltw_results.csv<br/>44 state elections]
-        BW[btw_wahlkreise.csv<br/>1196 constituency results]
-    end
-    subgraph events [Treatments: events and their news coverage]
-        EV[events_wikipedia_jahr.csv<br/>1356 events 2013 .. 2026]
-        TA[tagesschau_archiv.csv<br/>60955 teasers 2013-01 .. 2026-10]
-    end
-    subgraph controls [Controls]
-        CM[controls_monthly.csv<br/>165 months: unemployment, asylum]
-        RZ[regierungszufriedenheit.csv<br/>133 months: government satisfaction]
-    end
-    subgraph demo [Q2: who votes AfD]
-        GA[btw_gender_age.csv 96]
-        BE[btw_education.csv 12]
-        LA[ltw_age.csv 176]
-        LG[ltw_gender.csv 24]
-        LE[ltw_education.csv 48]
-        UM[tagesschau_umfrage-*.csv 972]
-        ST[btw_strukturdaten.csv<br/>1196 constituency structure rows]
-    end
-    EV -. "event week vs poll week" .-> SB
-    TA -. "coverage of an event" .-> EV
-    CM -.-> SB
-    RZ -.-> SB
-    BW --- ST
-    BR --- SB
+erDiagram
+    %% storage keys (solid) and analysis-time joins (dotted)
+    btw_wahlkreise ||--|| btw_strukturdaten : "Jahr + Wahlkreis"
+    btw_results ||--o{ btw_wahlkreise : "aggregates of"
+    btw_results ||--o{ btw_gender_age : "same election"
+    btw_results ||--o{ btw_education : "same election"
+    btw_results ||--o{ tagesschau_umfrage : "same election"
+    ltw_results ||--o{ ltw_age : "same election"
+    ltw_results ||--o{ ltw_gender : "same election"
+    ltw_results ||--o{ ltw_education : "same election"
+    events_wikipedia_jahr }o..o{ surveys_bund : "event week vs poll week (analysis)"
+    tagesschau_archiv }o..o{ events_wikipedia_jahr : "coverage of an event (analysis)"
+    controls_monthly }o..o{ surveys_bund : "month of fieldwork (analysis)"
+    regierungszufriedenheit }o..o{ surveys_bund : "month of fieldwork (analysis)"
+    btw_results }o..o{ surveys_bund : "ground truth for polls (analysis)"
+    ltw_results }o..o{ surveys_land : "ground truth for polls (analysis)"
+
+    surveys_bund {
+        string Institut "8 institutes: Allensbach, Forsa, FGW, GMS, INSA, Infratest dimap, Verian, YouGov"
+        string Datum "publication date, DD.MM.YYYY as printed"
+        string Zeitraum "fieldwork period as printed, e.g. 04.09.-16.09."
+        string Befragte "sample size as printed, e.g. 1.051"
+        float party "one column per party, percent; NaN if not reported"
+        float PIRATEN "only where reported"
+        float Nichtwaehler_Unentschl "only where reported"
+    }
+
+    surveys_land {
+        string Bundesland "14 states"
+        string Institut
+        string Datum "DD.MM.YYYY as printed"
+        string Zeitraum
+        string Befragte
+        float party "one column per party, percent"
+    }
+
+    btw_results {
+        int Jahr PK "2013, 2017, 2021, 2025"
+        string Gebiet PK "16 states and the federal territory"
+        int Wahlberechtigte
+        int Waehlende
+        float Erststimmen_party "one column per party, percent of valid first votes"
+        float Zweitstimmen_party "one column per party, percent of valid second votes"
+    }
+
+    btw_wahlkreise {
+        int Jahr PK
+        string Wahlkreis PK "299 per election"
+        int Wahlberechtigte
+        int Waehlende
+        string Direkt_gewaehlter_Abgeordnete "party of the constituency winner"
+        float Erststimmen_party "empty, not 0, if the party did not stand"
+        float Zweitstimmen_party
+    }
+
+    btw_strukturdaten {
+        int Jahr PK
+        int Wahlkreis_Nr
+        string Wahlkreis PK "join to btw_wahlkreise after dash normalisation"
+        string Land
+        float Flaeche_km2
+        float Bevoelkerung_1000
+        float Bevoelkerungsdichte_EW_je_km2
+        float Auslaender_Pct "2013 derived from total and German population"
+        float Wanderungssaldo_je_1000_EW
+        float Alter_Pct "six age shares: unter 18 .. 75plus"
+        float Schulabgaenger_ohne_Hauptschulabschluss_Pct
+        float Schulabgaenger_Abitur_Pct "incl. Fachhochschulreife from 2017"
+        float Verfuegbares_Einkommen_EUR_je_EW "NaN 2013"
+        float BIP_EUR_je_EW "NaN 2013"
+        float Kfz_je_1000_EW "2013, 2017"
+        float Pkw_je_1000_EW "2021, 2025"
+        float SV_Beschaeftigte_je_1000_EW
+        float Beschaeftigte_Produzierendes_Gewerbe_Pct
+        float Arbeitslosenquote_Pct
+        float SGBII_Empfaenger_je_1000_EW
+        string Fussnote "source footnotes, e.g. city-wide values"
+    }
+
+    ltw_results {
+        string Bundesland PK
+        date Datum PK "44 state elections 2013-01 .. 2026-09"
+        float party "one column per party incl. SSW, BIW, percent"
+    }
+
+    events_wikipedia_jahr {
+        string quelle "wikipedia_de_jahr"
+        string quelle_url "year page plus section anchor"
+        string quelle_permalink "oldid of the scraped revision"
+        datetime abgerufen_am
+        int jahr "2013 .. 2026"
+        string abschnitt "Politik und Weltgeschehen, Wirtschaft, Katastrophen, ..."
+        string unterabschnitt "D-A-CH, Europa, Terroranschlaege, Naturkatastrophen, ..."
+        int verschachtelt "1 if nested item inheriting the parent date"
+        date datum "parsed from the item text, never looked up"
+        date datum_ende "for ranges"
+        string datum_praezision "tag 1269, monat 58, fehlt 29"
+        string datum_roh "the matched date fragment"
+        string text_roh "item as printed"
+        string text "cleaned"
+        string stichworte "Wikipedia link titles inside the item, pipe-separated"
+        string stichworte_urls
+    }
+
+    tagesschau_archiv {
+        date datum "2013-01-01 .. 2026-10-09"
+        string zeit "HH:MM"
+        string ressort "first URL path segment: inland, ausland, wirtschaft, ...; http(s): for 841 external ARD links"
+        string label
+        string topline
+        string headline
+        string shorttext "teaser text"
+        string url PK "de-duplicated on url"
+    }
+
+    controls_monthly {
+        string Monat PK "2013-01 .. 2026-09"
+        float arbeitslosenquote "Eurostat ILO rate, seasonally adjusted, percent"
+        float asylantraege "Eurostat first-time applicants, rounded to 5"
+    }
+
+    regierungszufriedenheit {
+        date Datum PK "monthly from 2013-05, ARD DeutschlandTrend"
+        float sehr_zufrieden "percent"
+        float zufrieden
+        float weniger_zufrieden
+        float gar_nicht_zufrieden
+    }
+
+    btw_gender_age {
+        int Jahr PK
+        string Geschlecht PK "m, w, Summe; from 2021 also d/o"
+        string Altersgruppe PK
+        float party "second-vote share per party, percent"
+    }
+
+    btw_education {
+        date Datum PK
+        string Bildungsgruppe PK
+        float party "percent; 2017 missing, no chart"
+    }
+
+    ltw_age {
+        string Bundesland PK
+        date Datum PK
+        string Altersgruppe PK
+        float party "percent incl. SSW, NPD, BIW, Volt"
+    }
+
+    ltw_gender {
+        string Bundesland PK
+        date Datum PK
+        string Geschlecht PK "chart in 12 of 44 PDFs"
+        float party
+    }
+
+    ltw_education {
+        string Bundesland PK
+        date Datum PK
+        string Bildungsgruppe PK
+        float party
+    }
+
+    tagesschau_umfrage {
+        string election PK "e.g. 2025-02-23-BT-DE"
+        string page PK "alter, job, werwas, afd (one CSV each)"
+        string chart PK "chart title as printed"
+        string category PK "group label, e.g. 18-20"
+        float value "percent"
+        float value_prev "previous election, where printed"
+        string source "Infratest dimap"
+        string timestamp "as printed"
+    }
 ```
 
 Dotted lines are joins that happen in the analysis (Part 2), not in storage. The only direct key between files is
