@@ -1,17 +1,17 @@
 # How can the growth of the AfD be explained?
 
 **Deliverable 1: research question and dataset**
-Jan Rothweiler, Rebecca [surname] — DALAS, Sorbonne Université, 2026/27
-2026-10-20 — Repository: https://github.com/zebraschmetterling/DALAS-Project
+Jan Rothweiler, Rebecca Prechtl — DALAS, Sorbonne Université, 2026/27
+2026-10-23 — Repository: https://github.com/zebraschmetterling/DALAS-Project
 
-*Same content as `report.tex`; this copy is for editing together in Notion. Numbers read off `data/interim/` on 2026-10-20.*
+*Same content as `report.tex`; this copy is for editing together in Notion. Numbers read off `data/interim/` on 2026-10-23.*
 
 ## Research question
 
-Since its founding in February 2013 the AfD has gone from a party below the 5 % threshold to the second-largest party in the 2025 federal election. We ask what explains this growth, split into two questions that use different parts of the dataset and are answered at different grains.
+Since its founding in February 2013 the AfD has gone from a party below the 5 % threshold to the second-largest party in the 2025 federal election. We ask what explains this growth, split into two questions that use different parts of the dataset.
 
-- **Q1 (events, weekly grain).** Which international and national events had a measurable effect on the AfD's polling, and how does that effect compare across parties? We treat dated events as treatments, weekly poll averages as the outcome, and how much coverage an event received in German news as the exposure.
-- **Q2 (voters, election grain).** How has the profile of AfD voters changed over the four federal elections 2013–2025 and the state elections since 2013, by age, gender, education and occupation, and which constituency characteristics go with a high AfD share?
+- **Q1 (events).** Which international and national events had a measurable effect on the AfD's polling, and how does that effect compare across parties?
+- **Q2 (voters).** How has the profile of AfD voters changed over the four federal elections 2013–2025 and the state elections since 2013, by age, gender and education, and which constituency characteristics go with a high AfD share?
 
 Both are questions about the real world, not about the dataset. They may be sharpened during the semester; the overall objective, explaining AfD growth from events and voter structure, stays.
 
@@ -19,7 +19,7 @@ Both are questions about the real world, not about the dataset. They may be shar
 
 The dataset is built entirely by us from public sources with 19 scraper scripts (`src/scraping/`), one per source. Every raw download (1,006 HTML, CSV, ZIP, JSON and PDF files) is cached in `data/raw/` and never edited, so every step can be rerun offline; each script writes one cleaned CSV to `data/interim/`. No value is typed in by hand. Event rows carry the source URL, the Wikipedia revision permalink, the fetch time, the raw text and the raw date fragment, so every number can be traced back to its page. When a value cannot be parsed it is left empty and flagged, never guessed. Sources, URLs, scrape dates and row counts are listed in `docs/sources.md`; every choice and its reason in `docs/decisions.md`. The time window is 2013-01 to 2026-10, i.e. from the AfD's founding to the scrape date.
 
-The table below summarises the 16 collected files (70,021 rows in total). Three further event sources (taschenhirn.de, geopol.uk, English Wikipedia crisis list) were scraped, compared against the Wikipedia year pages and dropped: of their few day-dated rows most duplicate Wikipedia, and month- or year-dated rows cannot be placed on a weekly poll series.
+The table below summarises the 16 collected files (69,820 rows in total). Three further event sources (taschenhirn.de, geopol.uk, English Wikipedia crisis list) were scraped, compared against the Wikipedia year pages and dropped; so was the occupation exit-poll page, which does not serve Q2: of their few day-dated rows most duplicate Wikipedia, and month- or year-dated rows cannot be placed on a weekly poll series.
 
 | File | One row is | Rows | Variables (meaning) |
 |---|---|---:|---|
@@ -39,10 +39,10 @@ The table below summarises the 16 collected files (70,021 rows in total). Three 
 | **Q2: voter profile and structure** | | | |
 | `btw_gender_age` | election × gender × age | 96 | representative election statistics: second-vote share per party |
 | `btw_education`, `ltw_age`, `ltw_gender`, `ltw_education` | election × group | 12 / 176 / 24 / 48 | Forschungsgruppe Wahlen exit polls, read from PDF charts: share per party by education, age, gender |
-| `tagesschau_umfrage-*` | election × chart × group | 972 | Infratest dimap exit-poll charts for the four federal elections (age, occupation, gender, education, AfD voters), long format |
+| `tagesschau_umfrage-*` | election × chart × group | 771 | Infratest dimap exit-poll charts for the four federal elections (age, gender, education, AfD voters), long format |
 | `btw_strukturdaten` | election × constituency | 1,196 | official structural data: density, foreigner share, six age shares, school leavers, income, GDP, unemployment, SGB II recipients (22 variables) |
 
-*Collected datasets (`data/interim/`, state 2026-10-20). Full column lists and an ER diagram in `docs/data_model.md`, part 1.*
+*Collected datasets (`data/interim/`, state 2026-10-23). Full column lists and an ER diagram in `docs/data_model.md`, part 1.*
 
 ## Preprocessing done and choices made
 

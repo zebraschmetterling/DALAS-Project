@@ -61,7 +61,9 @@ FIELDS = ["election", "page", "chart", "category", "value", "value_prev", "sourc
 
 # what to scrape by default; extend as needed
 ELECTIONS = ["2025-02-23-BT-DE", "2021-09-26-BT-DE", "2017-09-24-BT-DE", "2013-09-22-BT-DE"]
-PAGES = ["umfrage-alter", "umfrage-job", "umfrage-werwas", "umfrage-afd"]
+# umfrage-job (occupation) is scraped no more: dropped from the project on 2026-10-23, see docs/decisions.md.
+# Pass pages=[..., "umfrage-job"] to main() to fetch it again.
+PAGES = ["umfrage-alter", "umfrage-werwas", "umfrage-afd"]
 
 IMG_TAG_RE = re.compile(r"<img\b[^>]*>", re.S)
 CHART_ID_RE = re.compile(r"chart_(\d+)\.(?:jpg|png)$")
