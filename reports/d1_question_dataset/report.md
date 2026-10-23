@@ -54,7 +54,7 @@ The table below summarises the 17 collected files (71,124 rows in total). Three 
 - **News archive thins out backwards.** The archive has about 1,300 teasers in 2013 and 13,700 in 2025, so coverage will only be compared as a share within a week, never as a count. Only the sections inland, ausland and wirtschaft are politically relevant; 841 rows link to other ARD sites and fall outside these sections.
 - **Controls from Eurostat** rather than Bundesagentur and BAMF: one consistent monthly API series since 2013. The ILO rate runs 1.5–2 points below the German headline rate; asylum counts are first-time applications, which lag the 2015 arrivals by months and peak in 2016-08. Both caveats go into the interpretation.
 - **Exit polls from PDFs and chart alt texts.** Group labels are kept as printed (e.g. 16–29 vs 18–29); harmonising them is an analysis decision. 2017 has no education chart and is missing, not interpolated.
-- **Left as scraped.** Poll files keep wahlrecht.de's printed values: dates as DD.MM.YYYY, sample sizes as "1.051", percent signs in state-election polls ("23 %"). Converting is one processing step; the printed values stay checkable against the source.
+- **Left as scraped.** Poll files keep wahlrecht.de's printed values: dates as DD.MM.YYYY, sample sizes as "1.051", percent signs in state-election polls ("23 %"). Converting is one processing step; the printed values stay checkable.
 
 ## Planned processing (not part of this deliverable)
 
