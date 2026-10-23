@@ -5,7 +5,7 @@ Question and dataset are still preliminary; see `docs/` for the running log.
 
 ## Layout
 - `data/raw/`        untouched downloads (HTML snapshots, API JSON). Never edited by hand.
-- `data/interim/`    one cleaned CSV per source.
+- `data/interim/`    one cleaned CSV per source; `not_used/` holds files of sources that were evaluated and dropped.
 - `data/processed/`  the merged dataset the analysis and dashboard use.
 - `src/scraping/`    one module per source (`taschenhirn.py`, ...).
 - `src/preprocessing/` cleaning, date parsing, merging, cut-offs.
@@ -37,7 +37,7 @@ python -m src.scraping.wikipedia_crises_en     # -> data/interim/events_wikipedi
 # tagesschau archive + exit polls
 python -m src.scraping.tagesschau_archiv --from 2020-03 --to 2020-03   # test one month -> data/interim/tagesschau_archiv.csv
 python -m src.scraping.tagesschau_archiv                               # full run 2013-01 .. now (~1 request/s, 15-30 min)
-python -m src.scraping.tagesschau_umfrage      # -> data/interim/tagesschau_umfrage-{alter,job,werwas,afd}.csv
+python -m src.scraping.tagesschau_umfrage      # -> data/interim/tagesschau_umfrage-{alter,werwas,afd}.csv
 # event salience (needs the archive and the Wikipedia events)
 python -m src.preprocessing.build_event_salience  # -> data/interim/event_salience_{weekly,summary}.csv
 # elections, polls, structure, controls

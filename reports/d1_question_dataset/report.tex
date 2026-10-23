@@ -23,8 +23,8 @@
 
 \title{\vspace{-2.2em}\large\textbf{How can the growth of the AfD be explained?}\\
 \normalsize Deliverable 1: research question and dataset\vspace{-0.6em}}
-\author{\small Jan Rothweiler \quad Rebecca \textcolor{red}{[surname]} \quad -- \quad DALAS, Sorbonne Universit\'e, 2026/27}
-\date{\small 2026-10-20 \quad Repository: \url{https://github.com/zebraschmetterling/DALAS-Project}}
+\author{\small Jan Rothweiler \quad Rebecca Prechtl \quad -- \quad DALAS, Sorbonne Universit\'e, 2026/27}
+\date{\small 2026-10-23 \quad Repository: \url{https://github.com/zebraschmetterling/DALAS-Project}}
 
 \begin{document}
 \maketitle
@@ -32,14 +32,12 @@
 
 \section*{Research question}
 Since its founding in February 2013 the AfD has gone from a party below the 5\,\% threshold to the second-largest
-party in the 2025 federal election. We ask what explains this growth, split into two questions that use different parts
-of the dataset and are answered at different grains.
+party in the 2025 federal election. We ask what explains this growth, split into two questions that use different parts of the dataset.
 \begin{itemize}
-  \item \textbf{Q1 (events, weekly grain).} Which international and national events had a measurable effect on the AfD's
-  polling, and how does that effect compare across parties? We treat dated events as treatments, weekly poll averages
-  as the outcome, and how much coverage an event received in German news as the exposure.
-  \item \textbf{Q2 (voters, election grain).} How has the profile of AfD voters changed over the four federal elections
-  2013--2025 and the state elections since 2013, by age, gender, education and occupation, and which constituency
+  \item \textbf{Q1 (events).} Which international and national events had a measurable effect on the AfD's
+  polling, and how does that effect compare across parties?
+  \item \textbf{Q2 (voters).} How has the profile of AfD voters changed over the four federal elections
+  2013--2025 and the state elections since 2013, by age, gender and education, and which constituency
   characteristics go with a high AfD share?
 \end{itemize}
 Both are questions about the real world, not about the dataset. They may be sharpened during the semester; the overall
@@ -54,8 +52,8 @@ so every number can be traced back to its page. When a value cannot be parsed it
 Sources, URLs, scrape dates and row counts are listed in \code{docs/sources.md}; every choice and its reason in
 \code{docs/decisions.md}. The time window is 2013-01 to 2026-10, i.e.\ from the AfD's founding to the scrape date.
 
-Table~\ref{tab:data} summarises the 16 collected files (70{,}021 rows in total). Three further event sources (taschenhirn.de,
-geopol.uk, English Wikipedia crisis list) were scraped, compared against the Wikipedia year pages and dropped: of their
+Table~\ref{tab:data} summarises the 16 collected files (69{,}820 rows in total). Three further event sources (taschenhirn.de,
+geopol.uk, English Wikipedia crisis list) were scraped, compared against the Wikipedia year pages and dropped; so was the occupation exit-poll page, which does not serve Q2: of their
 few day-dated rows most duplicate Wikipedia, and month- or year-dated rows cannot be placed on a weekly poll series.
 
 \begin{table}[t]
@@ -85,11 +83,11 @@ few day-dated rows most duplicate Wikipedia, and month- or year-dated rows canno
 \multicolumn{4}{@{}l}{\textit{Q2: voter profile and structure}}\\
 \file{btw_gender_age} & election $\times$ gender $\times$ age & 96 & representative election statistics: second-vote share per party\\
 \file{btw_education}, \file{ltw_age}, \file{ltw_gender}, \file{ltw_education} & election $\times$ group & \makecell{12 / 176 /\\ 24 / 48} & Forschungsgruppe Wahlen exit polls, read from PDF charts: share per party by education, age, gender\\
-\file{tagesschau_umfrage-*} & election $\times$ chart $\times$ group & 972 & Infratest dimap exit-poll charts for the four federal elections (age, occupation, gender, education, AfD voters), long format\\
+\file{tagesschau_umfrage-*} & election $\times$ chart $\times$ group & 771 & Infratest dimap exit-poll charts for the four federal elections (age, gender, education, AfD voters), long format\\
 \file{btw_strukturdaten} & election $\times$ constituency & 1{,}196 & official structural data: density, foreigner share, six age shares, school leavers, income, GDP, unemployment, SGB~II recipients (22 variables)\\
 \bottomrule
 \end{tabular}
-\caption{Collected datasets (\code{data/interim/}, state 2026-10-20). Full column lists and an ER diagram in \code{docs/data\_model.md}, part~1.}
+\caption{Collected datasets (\code{data/interim/}, state 2026-10-23). Full column lists and an ER diagram in \code{docs/data\_model.md}, part~1.}
 \label{tab:data}
 \end{table}
 

@@ -15,7 +15,7 @@ Dates are ISO strings, numbers plain floats; exceptions are listed under "Known 
 ## Part 1: Deliverable 1, the collected datasets (interim layer)
 
 Every file is written by exactly one scraper in `src/scraping/`, from a raw download kept in `data/raw/`. Nothing is hand-entered.
-Row counts as of 2026-10-20; sources, URLs and scrape dates are in `docs/sources.md`.
+Row counts as of 2026-10-23; sources, URLs and scrape dates are in `docs/sources.md`.
 
 ```mermaid
 erDiagram
@@ -183,7 +183,7 @@ erDiagram
 
     tagesschau_umfrage {
         string election PK "e.g. 2025-02-23-BT-DE"
-        string page PK "alter, job, werwas, afd (one CSV each)"
+        string page PK "alter, werwas, afd (one CSV each)"
         string chart PK "chart title as printed"
         string category PK "group label, e.g. 18-20"
         float value "percent"
@@ -236,7 +236,7 @@ The archive is about ten times thinner in 2013 than in 2025 (about 100 vs 1200 t
 | `ltw_age.csv` | state election x age group | 176 | `Bundesland`, `Datum`, `Altersgruppe`, party shares incl. `SSW`, `NPD`, `BIW`, `Volt` |
 | `ltw_gender.csv` | state election x gender | 24 | only 12 of 44 state-election PDFs contain the chart |
 | `ltw_education.csv` | state election x education group | 48 | |
-| `tagesschau_umfrage-{alter,job,werwas,afd}.csv` | election x chart x category | 972 | `election` (e.g. 2025-02-23-BT-DE), `page`, `chart` (title as printed), `category` (group label), `value`, `value_prev`, `source` (Infratest dimap), `timestamp`; long format, one row per bar of an exit-poll chart |
+| `tagesschau_umfrage-{alter,werwas,afd}.csv` | election x chart x category | 771 | `election` (e.g. 2025-02-23-BT-DE), `page`, `chart` (title as printed), `category` (group label), `value`, `value_prev`, `source` (Infratest dimap), `timestamp`; long format, one row per bar of an exit-poll chart |
 | `btw_strukturdaten.csv` | election year x constituency | 1196 | `Jahr`, `Wahlkreis_Nr`, `Wahlkreis`, `Land`; Bundeswahlleiterin structural data: area, population, density, foreigner share, migration balance, six age shares, two school-leaver shares, disposable income, GDP per head, vehicles and cars per 1000, employees per 1000, share in manufacturing, unemployment rate, SGB II recipients per 1000, `Fussnote`; variables a year does not publish are NaN (2013: income, GDP) |
 
 ### Known deviations in the interim files
@@ -244,7 +244,7 @@ The archive is about ten times thinner in 2013 than in 2025 (about 100 vs 1200 t
 - `surveys_bund.csv`, `surveys_land.csv`: `Datum` is DD.MM.YYYY and `Befragte` has a thousands separator, as printed on wahlrecht.de. Left as scraped; converted in processing (decisions 2026-10-20).
 - `tagesschau_archiv.csv`: 841 rows have "http:"/"https:" as `ressort` because they link to other ARD sites; they fall outside the political sections and are not used.
 - `events_wikipedia_jahr.csv`: 29 items have no parsable date token at the start of the text and carry `datum_praezision` = fehlt with empty `datum`; month-only items get the 1st of the month, visible through `datum_praezision`.
-- Three further event sources (taschenhirn, geopol.uk, English Wikipedia crisis list) were scraped, compared and dropped; their files remain in `data/interim/` but are not part of the dataset (decisions 2026-10-20).
+- Three further event sources (taschenhirn, geopol.uk, English Wikipedia crisis list) and the occupation exit-poll page were scraped and dropped; their files are kept in `data/interim/not_used/` and are not part of the dataset (decisions 2026-10-20 and 2026-10-23).
 
 ## Part 2: Prospective processed layer (deliverables 2 and 3)
 
@@ -316,7 +316,7 @@ erDiagram
         date election_date PK
         string level PK "Bund | Land"
         string bundesland PK "empty for Bund"
-        string group_type PK "age | gender | education | occupation"
+        string group_type PK "age | gender | education"
         string group_label PK "as printed in the source"
         string party PK
         float share "percent"
@@ -352,7 +352,7 @@ erDiagram
 | `events` | one row per event | `events_wikipedia_jahr.csv` (the other three event scrapers were evaluated and dropped, decisions 2026-10-20) | Q1 treatments |
 | `event_salience` | one row per event and week | `events`, `tagesschau_archiv.csv`, `tagesschau_sentiment.csv` | Q1 exposure. Built by `build_event_salience.py`, currently in `data/interim/event_salience_weekly.csv` plus a per-event summary `event_salience_summary.csv` (terms used, peak_share, baseline_share, salience, flag); candidate for processed |
 | `topics_weekly` | one row per ISO week | `tagesschau_archiv.csv` via `burst.py` | Q1 second, coarser treatment set: topics that dominated German news in a week but have no Wikipedia event, e.g. domestic debates. Not yet built |
-| `votes_by_group` | one row per election, level, group type, group, party | `btw_gender_age.csv`, `btw_education.csv`, `ltw_age.csv`, `ltw_gender.csv`, `ltw_education.csv`, `tagesschau_umfrage-{alter,job,werwas,afd}.csv` | Q2 descriptive trend, flows between parties within a group |
+| `votes_by_group` | one row per election, level, group type, group, party | `btw_gender_age.csv`, `btw_education.csv`, `ltw_age.csv`, `ltw_gender.csv`, `ltw_education.csv`, `tagesschau_umfrage-{alter,werwas,afd}.csv` | Q2 descriptive trend, flows between parties within a group |
 | `election_results` | one row per election, level, bundesland, party | `btw_results.csv`, `ltw_results.csv` | ground truth vs polls; Q1 and Q2 context |
 | `wahlkreise` | one row per Wahlkreis and election | `btw_wahlkreise.csv` (Erst- und Zweitstimmen, Direktmandat), `btw_strukturdaten.csv` (join on constituency name after dash normalisation, or number) | Q2 regression, map, direct mandates |
 
