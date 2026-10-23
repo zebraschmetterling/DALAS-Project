@@ -1,7 +1,7 @@
 # How can the growth of the AfD be explained?
 
 **Deliverable 1: research question and dataset**
-Jan Rothweiler, Rebecca Prechtl — DALAS, Sorbonne Université, 2026/27
+Jan Rothweiler, Rebecca Prechtl — DALAS, TD and TME Group 2, Sorbonne Université, 2026/27
 2026-10-23 — Repository: https://github.com/zebraschmetterling/DALAS-Project
 
 *Same content as `report.tex`; this copy is for editing together in Notion. Numbers read off `data/interim/` on 2026-10-23.*
