@@ -34,6 +34,7 @@ erDiagram
     regierungszufriedenheit }o..o{ surveys_bund : "month of fieldwork (analysis)"
     btw_results }o..o{ surveys_bund : "ground truth for polls (analysis)"
     ltw_results }o..o{ surveys_land : "ground truth for polls (analysis)"
+    ltw_results }o..o{ ltw_surveys : "ground truth for polls (analysis)"
 
     surveys_bund {
         string Institut "8 institutes: Allensbach, Forsa, FGW, GMS, INSA, Infratest dimap, Verian, YouGov"
@@ -52,6 +53,15 @@ erDiagram
         string Zeitraum
         string Befragte
         float party "one column per party, percent"
+    }
+
+    ltw_surveys {
+        string Bundesland "16 states"
+        string Institut "27 institutes, mostly Infratest dimap, INSA, Forsa"
+        string Datum "publication date, DD.MM.YYYY as printed, 2013-01 .. 2026-10"
+        string Zeitraum "fieldwork period as printed"
+        string Befragte "sample size as printed"
+        string party "one column per party incl. BIW/BD, PIRATEN, SSW; as printed, e.g. 23 % or 5,5 %"
     }
 
     btw_results {
@@ -201,7 +211,8 @@ Dotted lines are joins that happen in the analysis (Part 2), not in storage. The
 | File | Grain | Rows | Variables |
 |---|---|---|---|
 | `surveys_bund.csv` | one poll (institute x publication date) | 3305 | `Institut` (Allensbach, Forsa, Forschungsgruppe Wahlen, GMS, INSA, Infratest dimap, Verian, YouGov); `Datum` publication date; `Zeitraum` fieldwork period as printed ("04.09.–16.09."); `Befragte` sample size; vote shares in percent for the standard parties plus `PIRATEN`, `Nichtwähler/ Unentschl.` where the institute reports them; parties an institute did not report are NaN |
-| `surveys_land.csv` | one state poll | 275 | same layout plus `Bundesland`; 14 states |
+| `surveys_land.csv` | one state poll (Bundestag question asked in a state) | 275 | same layout plus `Bundesland`; 14 states |
+| `ltw_surveys.csv` | one state-election poll (Landtagswahl question) | 1304 | `Bundesland` (16), `Institut` (27), `Datum`, `Zeitraum`, `Befragte`; standard parties plus `BIW/BD`, `PIRATEN`, `SSW` where above 5 % in at least one poll; about 80 to 125 polls per year, 2013-01 to 2026-10 |
 
 ### Election results (ground truth, Q1 and Q2 context)
 
@@ -241,7 +252,7 @@ The archive is about ten times thinner in 2013 than in 2025 (about 100 vs 1200 t
 
 ### Known deviations in the interim files
 
-- `surveys_bund.csv`, `surveys_land.csv`: `Datum` is DD.MM.YYYY and `Befragte` has a thousands separator, as printed on wahlrecht.de. Left as scraped; converted in processing (decisions 2026-10-20).
+- `surveys_bund.csv`, `surveys_land.csv`, `ltw_surveys.csv`: `Datum` is DD.MM.YYYY and `Befragte` has a thousands separator, as printed on wahlrecht.de; in `ltw_surveys.csv` the party values are also kept as printed ("23 %", "5,5 %"). Left as scraped; converted in processing (decisions 2026-10-20, 2026-10-23).
 - `tagesschau_archiv.csv`: 841 rows have "http:"/"https:" as `ressort` because they link to other ARD sites; they fall outside the political sections and are not used.
 - `events_wikipedia_jahr.csv`: 29 items have no parsable date token at the start of the text and carry `datum_praezision` = fehlt with empty `datum`; month-only items get the 1st of the month, visible through `datum_praezision`.
 - Three further event sources (taschenhirn, geopol.uk, English Wikipedia crisis list) and the occupation exit-poll page were scraped and dropped; their files are kept in `data/interim/not_used/` and are not part of the dataset (decisions 2026-10-20 and 2026-10-23).

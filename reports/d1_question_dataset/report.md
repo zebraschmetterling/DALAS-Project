@@ -17,15 +17,16 @@ Both are questions about the real world, not about the dataset. They may be shar
 
 ## Data collection
 
-The dataset is built entirely by us from public sources with 19 scraper scripts (`src/scraping/`), one per source. Every raw download (1,006 HTML, CSV, ZIP, JSON and PDF files) is cached in `data/raw/` and never edited, so every step can be rerun offline; each script writes one cleaned CSV to `data/interim/`. No value is typed in by hand. Event rows carry the source URL, the Wikipedia revision permalink, the fetch time, the raw text and the raw date fragment, so every number can be traced back to its page. When a value cannot be parsed it is left empty and flagged, never guessed. Sources, URLs, scrape dates and row counts are listed in `docs/sources.md`; every choice and its reason in `docs/decisions.md`. The time window is 2013-01 to 2026-10, i.e. from the AfD's founding to the scrape date.
+The dataset is built entirely by us from public sources with 20 scraper scripts (`src/scraping/`), one per source. Every raw download (about 1,000 HTML, CSV, ZIP, JSON and PDF files) is cached in `data/raw/` and never edited, so every step can be rerun offline; each script writes one cleaned CSV to `data/interim/`. No value is typed in by hand. Event rows carry the source URL, the Wikipedia revision permalink, the fetch time, the raw text and the raw date fragment, so every number can be traced back to its page. When a value cannot be parsed it is left empty and flagged, never guessed. Sources, URLs, scrape dates and row counts are listed in `docs/sources.md`; every choice and its reason in `docs/decisions.md`. The time window is 2013-01 to 2026-10, i.e. from the AfD's founding to the scrape date.
 
-The table below summarises the 16 collected files (69,820 rows in total). Three further event sources (taschenhirn.de, geopol.uk, English Wikipedia crisis list) were scraped, compared against the Wikipedia year pages and dropped; so was the occupation exit-poll page, which does not serve Q2: of their few day-dated rows most duplicate Wikipedia, and month- or year-dated rows cannot be placed on a weekly poll series.
+The table below summarises the 17 collected files (71,124 rows in total). Three further event sources (taschenhirn.de, geopol.uk, English Wikipedia crisis list) were scraped, compared against the Wikipedia year pages and dropped; so was the occupation exit-poll page, which does not serve Q2: of their few day-dated rows most duplicate Wikipedia, and month- or year-dated rows cannot be placed on a weekly poll series.
 
 | File | One row is | Rows | Variables (meaning) |
 |---|---|---:|---|
 | **Q1 outcome: polls (wahlrecht.de)** | | | |
 | `surveys_bund` | one poll | 3,305 | institute (8), publication date, fieldwork period, sample size; vote share in % for CDU/CSU, SPD, Grüne, FDP, Linke, AfD, FW, BSW, Sonstige (NaN if not reported). About 220–280 polls per year, 2013-02 to 2026-10. |
-| `surveys_land` | one state poll | 275 | same, plus state (14 states) |
+| `surveys_land` | one state poll | 275 | same, plus state (14 states); Bundestag question asked in a state |
+| `ltw_surveys` | one state-election poll | 1,304 | Landtagswahl question, 16 states, 27 institutes, 2013-01 to 2026-10; same layout plus BIW/BD, PIRATEN, SSW where above 5 % in at least one poll |
 | **Q1 treatments and exposure** | | | |
 | `events_wikipedia_jahr` | one event | 1,356 | list items of the "Ereignisse" section of the German Wikipedia year pages 2013–2026, politics, economy and disaster subsections only: date (1,269 day-exact, 58 month-only, 29 unparsable), subsection (e.g. D-A-CH, Europa, Terroranschläge), text, Wikipedia link titles, provenance |
 | `tagesschau_archiv` | one news teaser | 60,955 | tagesschau.de archive 2013-01 to 2026-10: date, time, section (inland, ausland, wirtschaft = 85 %), headline, teaser text, URL |
@@ -53,7 +54,7 @@ The table below summarises the 16 collected files (69,820 rows in total). Three 
 - **News archive thins out backwards.** The archive has about 1,300 teasers in 2013 and 13,700 in 2025, so coverage will only be compared as a share within a week, never as a count. Only the sections inland, ausland and wirtschaft are politically relevant; 841 rows link to other ARD sites and fall outside these sections.
 - **Controls from Eurostat** rather than Bundesagentur and BAMF: one consistent monthly API series since 2013. The ILO rate runs 1.5–2 points below the German headline rate; asylum counts are first-time applications, which lag the 2015 arrivals by months and peak in 2016-08. Both caveats go into the interpretation.
 - **Exit polls from PDFs and chart alt texts.** Group labels are kept as printed (e.g. 16–29 vs 18–29); harmonising them is an analysis decision. 2017 has no education chart and is missing, not interpolated.
-- **Left as scraped.** Poll files keep the German date format and thousands separators of wahlrecht.de; the conversion is a one-line processing step and keeping the printed values makes them checkable against the source.
+- **Left as scraped.** Poll files keep the German date format, thousands separators and percent signs of wahlrecht.de; converting is a one-line processing step and the printed values stay checkable against the source.
 
 ## Planned processing (not part of this deliverable)
 

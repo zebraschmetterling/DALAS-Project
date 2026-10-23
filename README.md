@@ -43,6 +43,6 @@ python -m src.preprocessing.build_event_salience  # -> data/interim/event_salien
 # elections, polls, structure, controls
 python -m src.scraping.btw_strukturdaten       # -> data/interim/btw_strukturdaten.csv
 python -m src.scraping.controls_monthly        # -> data/interim/controls_monthly.csv
-# plus the election and poll scrapers: surveys_bund, surveys_land, btw_results, btw_wahlkreise,
+# plus the election and poll scrapers: surveys_bund, surveys_land, ltw_surveys, btw_results, btw_wahlkreise,
 # btw_gender_age, btw_education, ltw_results, ltw_age, ltw_gender, ltw_education, regierungszufriedenheit
 ```
