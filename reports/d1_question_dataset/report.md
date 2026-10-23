@@ -25,11 +25,11 @@ The table below summarises the 17 collected files (71,124 rows in total). Three 
 |---|---|---:|---|
 | **Q1 outcome: polls (wahlrecht.de)** | | | |
 | `surveys_bund` | one poll | 3,305 | institute (8), publication date, fieldwork period, sample size; vote share in % for CDU/CSU, SPD, Grüne, FDP, Linke, AfD, FW, BSW, Sonstige (NaN if not reported). About 220–280 polls per year, 2013-02 to 2026-10. |
-| `surveys_land` | one state poll | 275 | same, plus state (14 states); Bundestag question asked in a state |
+| `surveys_land` | one state poll | 275 | same layout plus state; Bundestag question asked within a state, 14 of 16 states, not Landtag polls |
 | `ltw_surveys` | one state-election poll | 1,304 | Landtagswahl question, 16 states, 27 institutes, 2013-01 to 2026-10; same layout plus BIW/BD, PIRATEN, SSW where above 5 % in at least one poll |
 | **Q1 treatments and exposure** | | | |
 | `events_wikipedia_jahr` | one event | 1,356 | list items of the "Ereignisse" section of the German Wikipedia year pages 2013–2026, politics, economy and disaster subsections only: date (1,269 day-exact, 58 month-only, 29 unparsable), subsection (e.g. D-A-CH, Europa, Terroranschläge), text, Wikipedia link titles, provenance |
-| `tagesschau_archiv` | one news teaser | 60,955 | tagesschau.de archive 2013-01 to 2026-10: date, time, section (inland, ausland, wirtschaft = 85 %), headline, teaser text, URL |
+| `tagesschau_archiv` | one news teaser | 60,955 | tagesschau.de archive 2013-01 to 2026-10: date, time, section (the political sections inland, ausland and wirtschaft together hold 85 % of all teasers), headline, teaser text, URL |
 | **Q1 controls (monthly)** | | | |
 | `controls_monthly` | one month | 165 | Eurostat: ILO unemployment rate (seasonally adjusted), first-time asylum applicants |
 | `regierungszufriedenheit` | one month | 133 | ARD DeutschlandTrend: satisfaction with the federal government, four categories in % |
@@ -40,7 +40,7 @@ The table below summarises the 17 collected files (71,124 rows in total). Three 
 | **Q2: voter profile and structure** | | | |
 | `btw_gender_age` | election × gender × age | 96 | representative election statistics: second-vote share per party |
 | `btw_education`, `ltw_age`, `ltw_gender`, `ltw_education` | election × group | 12 / 176 / 24 / 48 | Forschungsgruppe Wahlen exit polls, read from PDF charts: share per party by education, age, gender |
-| `tagesschau_umfrage-*` | election × chart × group | 771 | Infratest dimap exit-poll charts for the four federal elections (age, gender, education, AfD voters), long format |
+| `tagesschau_umfrage-alter`, `-werwas`, `-afd` | election × chart × group | 315 / 195 / 261 | Infratest dimap exit-poll charts for the four federal elections, one file per archive page: age; gender, education, first-time voters; AfD voters. Long format, one row per bar |
 | `btw_strukturdaten` | election × constituency | 1,196 | official structural data: density, foreigner share, six age shares, school leavers, income, GDP, unemployment, SGB II recipients (22 variables) |
 
 *Collected datasets (`data/interim/`, state 2026-10-23). Full column lists and an ER diagram in `docs/data_model.md`, part 1.*
@@ -54,7 +54,7 @@ The table below summarises the 17 collected files (71,124 rows in total). Three 
 - **News archive thins out backwards.** The archive has about 1,300 teasers in 2013 and 13,700 in 2025, so coverage will only be compared as a share within a week, never as a count. Only the sections inland, ausland and wirtschaft are politically relevant; 841 rows link to other ARD sites and fall outside these sections.
 - **Controls from Eurostat** rather than Bundesagentur and BAMF: one consistent monthly API series since 2013. The ILO rate runs 1.5–2 points below the German headline rate; asylum counts are first-time applications, which lag the 2015 arrivals by months and peak in 2016-08. Both caveats go into the interpretation.
 - **Exit polls from PDFs and chart alt texts.** Group labels are kept as printed (e.g. 16–29 vs 18–29); harmonising them is an analysis decision. 2017 has no education chart and is missing, not interpolated.
-- **Left as scraped.** Poll files keep the German date format, thousands separators and percent signs of wahlrecht.de; converting is a one-line processing step and the printed values stay checkable against the source.
+- **Left as scraped.** Poll files keep wahlrecht.de's printed values: dates as DD.MM.YYYY, sample sizes as "1.051", percent signs in state-election polls ("23 %"). Converting is one processing step; the printed values stay checkable against the source.
 
 ## Planned processing (not part of this deliverable)
 

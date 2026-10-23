@@ -65,12 +65,12 @@ few day-dated rows most duplicate Wikipedia, and month- or year-dated rows canno
 \midrule
 \multicolumn{4}{@{}l}{\textit{Q1 outcome: polls (wahlrecht.de)}}\\
 \file{surveys_bund} & one poll & 3{,}305 & institute (8), publication date, fieldwork period, sample size; vote share in \% for CDU/CSU, SPD, Gr\"une, FDP, Linke, AfD, FW, BSW, Sonstige (NaN if not reported). About 220--280 polls per year, 2013-02 to 2026-10.\\
-\file{surveys_land} & one state poll & 275 & same, plus state (14 states); Bundestag question asked in a state\\
+\file{surveys_land} & one state poll & 275 & same layout plus state; Bundestag question asked within a state, 14 of 16 states, not Landtag polls\\
 \file{ltw_surveys} & one state-election poll & 1{,}304 & Landtagswahl question, 16 states, 27 institutes, 2013-01 to 2026-10; same layout plus BIW/BD, PIRATEN, SSW where above 5\,\% in at least one poll\\
 \addlinespace[2pt]
 \multicolumn{4}{@{}l}{\textit{Q1 treatments and exposure}}\\
 \file{events_wikipedia_jahr} & one event & 1{,}356 & list items of the ``Ereignisse'' section of the German Wikipedia year pages 2013--2026, politics, economy and disaster subsections only: date (1{,}269 day-exact, 58 month-only, 29 unparsable), subsection (e.g.\ D-A-CH, Europa, Terroranschl\"age), text, Wikipedia link titles, provenance\\
-\file{tagesschau_archiv} & one news teaser & 60{,}955 & tagesschau.de archive 2013-01 to 2026-10: date, time, section (inland, ausland, wirtschaft = 85\,\%), headline, teaser text, URL\\
+\file{tagesschau_archiv} & one news teaser & 60{,}955 & tagesschau.de archive 2013-01 to 2026-10: date, time, section (the political sections inland, ausland and wirtschaft together hold 85\,\% of all teasers), headline, teaser text, URL\\
 \addlinespace[2pt]
 \multicolumn{4}{@{}l}{\textit{Q1 controls (monthly)}}\\
 \file{controls_monthly} & one month & 165 & Eurostat: ILO unemployment rate (seasonally adjusted), first-time asylum applicants\\
@@ -84,7 +84,7 @@ few day-dated rows most duplicate Wikipedia, and month- or year-dated rows canno
 \multicolumn{4}{@{}l}{\textit{Q2: voter profile and structure}}\\
 \file{btw_gender_age} & election $\times$ gender $\times$ age & 96 & representative election statistics: second-vote share per party\\
 \file{btw_education}, \file{ltw_age}, \file{ltw_gender}, \file{ltw_education} & election $\times$ group & \makecell{12 / 176 /\\ 24 / 48} & Forschungsgruppe Wahlen exit polls, read from PDF charts: share per party by education, age, gender\\
-\file{tagesschau_umfrage-*} & election $\times$ chart $\times$ group & 771 & Infratest dimap exit-poll charts for the four federal elections (age, gender, education, AfD voters), long format\\
+\file{tagesschau_umfrage-alter}, \file{-werwas}, \file{-afd} & election $\times$ chart $\times$ group & \makecell{315 / 195 /\\ 261} & Infratest dimap exit-poll charts for the four federal elections, one file per archive page: age; gender, education, first-time voters; AfD voters. Long format, one row per bar\\
 \file{btw_strukturdaten} & election $\times$ constituency & 1{,}196 & official structural data: density, foreigner share, six age shares, school leavers, income, GDP, unemployment, SGB~II recipients (22 variables)\\
 \bottomrule
 \end{tabular}
@@ -113,7 +113,7 @@ few day-dated rows most duplicate Wikipedia, and month- or year-dated rows canno
   2015 arrivals by months and peak in 2016-08. Both caveats go into the interpretation.
   \item \textbf{Exit polls from PDFs and chart alt texts.} Group labels are kept as printed (e.g.\ 16--29 vs 18--29);
   harmonising them is an analysis decision. 2017 has no education chart and is missing, not interpolated.
-  \item \textbf{Left as scraped.} Poll files keep the German date format, thousands separators and percent signs of wahlrecht.de; converting is a one-line processing step and the printed values stay checkable against the source.
+  \item \textbf{Left as scraped.} Poll files keep wahlrecht.de's printed values: dates as DD.MM.YYYY, sample sizes as ``1.051'', percent signs in state-election polls (``23\,\%''). Converting is one processing step; the printed values stay checkable against the source.
 \end{itemize}
 
 \section*{Planned processing (not part of this deliverable)}
