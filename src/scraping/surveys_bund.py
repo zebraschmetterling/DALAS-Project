@@ -135,4 +135,4 @@ def extract_all(cutoff, out="surveys_bund.csv"):
     return combined
 
 
-extract_all(cutoff="2013-02-06")
+extract_all(cutoff="2013-01-01")

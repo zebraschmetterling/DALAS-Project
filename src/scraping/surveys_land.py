@@ -13,7 +13,7 @@ What this script does:
   surveys_bund).
 - Skips the rows showing actual election results ("Bundestagswahl am ...").
 - Takes all surveys back to the point where the AfD was founded
-  (6 February 2013); older polls are discarded.
+  (2013); older polls are discarded.
 - Saves everything as "surveys_land.csv" in data/interim.
 """
 import re
@@ -66,7 +66,7 @@ def split_sonstige(text):
     return out
 
 
-def extract_all(cutoff="2013-02-06", out="surveys_land.csv"):
+def extract_all(cutoff="2013-01-01", out="surveys_land.csv"):
     cutoff = pd.Timestamp(cutoff)
     page = fetch_html(URL)
 
