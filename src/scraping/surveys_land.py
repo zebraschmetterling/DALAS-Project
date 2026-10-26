@@ -15,25 +15,52 @@ What this script does:
 - Takes all surveys back to the point where the AfD was founded
   (2013); older polls are discarded.
 - Saves everything as "surveys_land.csv" in data/interim.
+- The HTML page is stored in data/raw/surveys_land. Later runs read it from there,
+  set RELOAD = True to download it again.
 """
 import re
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.error import URLError
+from urllib.parse import urlparse
 
 import bs4
 import pandas as pd
 
 URL = "https://www.wahlrecht.de/umfragen/laender.htm"
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "interim"
+RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw" / "surveys_land"
+
+# False: use the HTML file cached in data/raw (download only if missing)
+# True:  download the page again and overwrite the cached file
+RELOAD = False
 
 DATE_RE = re.compile(r"\d{2}\.\d{2}\.\d{4}")
 MARKER_RE = re.compile(r"^(?:TOM|T|O|F)\s*•\s*")                  # survey method, e.g. "T •"
 BEFRAGTE_RE = re.compile(r"^(≈?\d{1,3}(?:\.\d{3})*|\?)(?=\s|$)\s*(.*)$")
 
 
+def raw_path(url):
+    """Local file in RAW_DIR for a URL, e.g. .../umfragen/laender.htm -> umfragen_laender.htm"""
+    path = urlparse(url).path.strip("/")
+    if not path or url.endswith("/"):
+        path = f"{path}/index.html"
+    return RAW_DIR / path.strip("/").replace("/", "_")
+
+
 def fetch_html(url):
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    return bs4.BeautifulSoup(urlopen(req).read(), "lxml")
+    file = raw_path(url)
+    if RELOAD or not file.exists():
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
+        try:
+            html = urlopen(req).read()
+        except URLError as e:
+            hint = ("set RELOAD = False to use the cached copy" if file.exists()
+                    else f"{file.name} is not cached in {RAW_DIR}, run once with internet access first")
+            raise RuntimeError(f"Could not download {url} ({e.reason}): {hint}") from e
+        file.write_bytes(html)
+    return bs4.BeautifulSoup(file.read_bytes(), "lxml")
 
 
 def clean(cell):

@@ -11,9 +11,10 @@ What this script does
    and every yearly archive page (.../deutschlandtrend/archiv/<year>, from
    2013 on). The PDF links ("Alle Grafiken zum Download") are collected from
    those listing pages and from every DeutschlandTrend article linked there.
-   All PDFs published from the February 2013 edition onwards are saved to
+   All PDFs published since January 2013 are saved to
    ../../data/raw/deutschlandtrend (relative to this file). Files that already
-   exist are not downloaded again.
+   exist are not downloaded again. This step only runs if RELOAD = True;
+   with RELOAD = False the PDFs already on disk are used.
 
 2. Extraction
    Every PDF in that folder is searched for the question
@@ -42,15 +43,13 @@ Important notes
   Without a reference edition the bar heights are measured on the rendered
   page and scaled to 100 % minus "weiß nicht" (only used for May 2013). The
   bar heights also serve as a cross-check for the reconstructed values.
-* The February 2013 edition was published on 31 January 2013, so the
-  download cutoff is based on the publication date of that edition.
 * Values of the same survey (same end date) found in several PDFs are only
   stored once.
 
 Usage
 -----
     pip install -r requirements.txt
-    python src/scraping/regierungszufriedenheit.py              # download + extract
+    python src/scraping/regierungszufriedenheit.py              # download (if RELOAD) + extract
     python src/scraping/regierungszufriedenheit.py --no-download  # extract only
 
 Dependencies: requests, beautifulsoup4, pymupdf
@@ -81,10 +80,13 @@ BASE_URL = "https://www.tagesschau.de"
 OVERVIEW_URL = f"{BASE_URL}/inland/deutschlandtrend"
 ARCHIVE_URL = f"{OVERVIEW_URL}/archiv/{{year}}"
 
-# First archive year to crawl and earliest publication date of a PDF to download
-# (the DeutschlandTrend "Februar 2013" was published on 31 January 2013).
+# False: only extract from the PDFs already in RAW_DIR (no internet needed)
+# True:  crawl tagesschau.de and download all PDFs that are not on disk yet
+RELOAD = True
+
+# First archive year to crawl and earliest publication date of a PDF to download.
 FIRST_YEAR = 2013
-MIN_PUBLICATION_DATE = date(2013, 1, 31)
+MIN_PUBLICATION_DATE = date(2013, 1, 1)
 
 # All paths are resolved relative to this file, so the script can be started
 # from any working directory.
@@ -658,14 +660,14 @@ def main() -> int:
     parser.add_argument("--no-download", action="store_true", help="skip the crawling/download step")
     args = parser.parse_args()
 
-    if not args.no_download:
+    if RELOAD and not args.no_download:
         print("Step 1: collecting PDF links from tagesschau.de ...")
         download_pdfs(collect_pdf_links(), RAW_DIR)
 
     print("Step 2: extracting satisfaction with the federal government ...")
     rows = build_table(RAW_DIR)
     if not rows:
-        print("No values extracted - nothing written.")
+        print("No values extracted - nothing written. (No PDFs yet? Run once with RELOAD = True.)")
         return 1
     write_csv(rows, OUTPUT_CSV)
     return 0

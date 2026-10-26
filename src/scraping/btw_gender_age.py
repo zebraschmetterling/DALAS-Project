@@ -5,8 +5,8 @@ What this script does:
 1. Looks up the download link of the time series "Zweitstimmen nach Geschlecht
    und Altersgruppen" (since 1953, representative election statistics) on the
    website of the Bundeswahlleiterin and downloads the CSV file to
-   ../../data/raw (relative to this script). If the file already exists
-   there, the download is skipped.
+   ../../data/raw (relative to this script). This only happens if
+   RELOAD = True; with RELOAD = False the file already there is used.
 2. Reads the raw CSV, keeps only federal elections from 2013 onwards, merges
    the results of CDU and CSU into one column "CDU/CSU" and writes a clean
    table with the schema
@@ -35,6 +35,10 @@ PAGE_URL = (
 )
 CSV_FILENAME = "btw_rws_zwst-1953.csv"
 MIN_YEAR = 2013
+
+# False: only use the CSV already in RAW_DIR (no internet needed)
+# True:  download the CSV again and overwrite the existing file
+RELOAD = True
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 RAW_DIR = (SCRIPT_DIR / "../../data/raw").resolve()
@@ -106,11 +110,13 @@ def build_table(raw: pd.DataFrame) -> pd.DataFrame:
 
 def main() -> None:
     raw_path = RAW_DIR / CSV_FILENAME
-    if raw_path.exists():
-        print(f"Raw file already exists, skipping download: {raw_path}")
-    else:
+    if RELOAD:
         csv_url = find_csv_url()
         raw_path = download_csv(csv_url)
+    elif raw_path.exists():
+        print(f"RELOAD = False, using existing raw file: {raw_path}")
+    else:
+        raise SystemExit(f"Raw file not found: {raw_path} - run once with RELOAD = True.")
 
     table = build_table(read_raw_csv(raw_path))
 

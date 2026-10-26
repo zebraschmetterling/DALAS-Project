@@ -5,7 +5,7 @@ What this script does
 ----------------------
 1. Reads the overview at https://www.wahlrecht.de/umfragen/landtage/ and
    downloads one HTML page per Bundesland into data/raw/ltw_surveys.
-   Set REFRESH_HTML to False to skip the download and reuse those files,
+   Set RELOAD to False to skip the download and reuse those files,
    so the script can run offline.
 2. Parses every poll table on those pages. Column layouts differ by state
    and by time period (older tables have no AfD or BSW column, Hamburg used
@@ -66,7 +66,7 @@ from bs4 import BeautifulSoup
 # Set True to download the state pages again.
 # Set False to parse the HTML already stored in data/raw/ltw_surveys
 # (the script then runs without a network connection).
-REFRESH_HTML = True
+RELOAD = True
 
 # First publication date to write into the CSV, inclusive.
 # "YYYY-MM-DD" or "DD.MM.YYYY", for example "2013-02-06".
@@ -895,7 +895,7 @@ def build_table():
     if not files:
         print(
             f"No saved HTML in {RAW_DIR}. "
-            "Set REFRESH_HTML = True to download the state pages."
+            "Set RELOAD = True to download the state pages."
         )
         return pd.DataFrame(columns=BASE_COLUMNS)
 
@@ -954,12 +954,12 @@ def build_table():
 
 
 def main():
-    if REFRESH_HTML:
+    if RELOAD:
         download_pages()
     else:
         print(
             f"Reusing saved HTML in {RAW_DIR} "
-            "(set REFRESH_HTML = True to download again)."
+            "(set RELOAD = True to download again)."
         )
 
     frame = build_table()

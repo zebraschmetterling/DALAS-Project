@@ -8,8 +8,8 @@ What this script does
 ---------------------
 1. Opens https://www.bundeswahlleiterin.de/service/landtagswahlen.html, finds the
    link "Ergebnisse früherer Landtagswahlen" (PDF) and downloads it to
-   ../../data/raw/ (relative to this script). If the file already exists, nothing
-   is downloaded. To force a refresh, delete the PDF.
+   ../../data/raw/ltw_erg_gesamt.pdf (relative to this script). This only
+   happens if RELOAD = True; with RELOAD = False the existing PDF is used.
 2. Parses section 3 of the PDF ("... in den Ländern seit 1946"). Every page holds
    up to two election tables side by side, so each page is split into a left and
    a right half using word coordinates. The election date is taken from the
@@ -43,7 +43,7 @@ from __future__ import annotations
 import re
 import sys
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import pandas as pd
 import pdfplumber
@@ -55,6 +55,11 @@ from bs4 import BeautifulSoup
 # --------------------------------------------------------------------------- #
 PAGE_URL = "https://www.bundeswahlleiterin.de/service/landtagswahlen.html"
 LINK_TEXT = "Ergebnisse früherer Landtagswahlen"
+PDF_NAME = "ltw_erg_gesamt.pdf"  # local file name in RAW_DIR
+
+# False: only use the PDF already in RAW_DIR (no internet needed)
+# True:  download the PDF again and overwrite the existing file
+RELOAD = True
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 RAW_DIR = (SCRIPT_DIR / "../../data/raw").resolve()
@@ -129,13 +134,10 @@ def find_pdf_url() -> str:
 
 
 def download_pdf() -> Path:
-    """Download the PDF to RAW_DIR unless a file with the same name exists."""
+    """Download the PDF to RAW_DIR (an existing file is overwritten)."""
     url = find_pdf_url()
     RAW_DIR.mkdir(parents=True, exist_ok=True)
-    target = RAW_DIR / Path(urlparse(url).path).name
-    if target.exists():
-        print(f"[skip] {target.name} already exists in {RAW_DIR}")
-        return target
+    target = RAW_DIR / PDF_NAME
     print(f"[download] {url}")
     tmp = target.with_suffix(".part")
     with requests.get(url, stream=True, timeout=120, headers={"User-Agent": "Mozilla/5.0"}) as r:
@@ -143,7 +145,7 @@ def download_pdf() -> Path:
         with open(tmp, "wb") as f:
             for chunk in r.iter_content(chunk_size=1 << 16):
                 f.write(chunk)
-    tmp.rename(target)  # rename only after a complete download
+    tmp.replace(target)  # rename only after a complete download
     print(f"[saved] {target}")
     return target
 
@@ -332,7 +334,13 @@ def build_table(elections: list[dict]) -> pd.DataFrame:
 # Main
 # --------------------------------------------------------------------------- #
 def main() -> None:
-    pdf_path = download_pdf()
+    if RELOAD:
+        pdf_path = download_pdf()
+    else:
+        pdf_path = RAW_DIR / PDF_NAME
+        if not pdf_path.exists():
+            sys.exit(f"{pdf_path} not found - run once with RELOAD = True.")
+        print(f"[skip] RELOAD = False, using existing {pdf_path}")
     elections = parse_pdf(pdf_path)
     if not elections:
         sys.exit("No elections could be parsed - the PDF layout may have changed.")

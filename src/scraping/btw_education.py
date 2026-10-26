@@ -11,7 +11,8 @@ What this script does
    "Kurzanalyse" PDF of every Bundestag election (Bundestagswahl) from the most
    recent one back to and including 2013 (configurable via --min-year).
    PDFs are stored in ../../data/raw/Kurzanalysen_ForschergruppeWahlen and are
-   only downloaded if the file does not exist yet.
+   only downloaded if the file does not exist yet. This step only runs if
+   RELOAD = True; with RELOAD = False the PDFs already on disk are used.
 
 2. Extracts the chart "Wahlentscheidung in den Bildungsgruppen" (vote choice
    by education group) from every downloaded PDF and writes one tidy table to
@@ -65,6 +66,10 @@ OUTPUT_CSV = INTERIM_DIR / "btw_education.csv"
 
 # Oldest election year that is downloaded and parsed (inclusive).
 DEFAULT_MIN_YEAR = 2013
+
+# False: only parse the PDFs already in RAW_DIR (no internet needed)
+# True:  read the overview page and download all PDFs that are not on disk yet
+RELOAD = True
 
 # File name pattern of the downloaded PDFs; the election year is encoded in
 # the name so that existing files can be recognised without the website.
@@ -591,7 +596,10 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    download_kurzanalysen(args.min_year)
+    if RELOAD:
+        download_kurzanalysen(args.min_year)
+    else:
+        print(f"RELOAD = False: no download, using the PDFs in {RAW_DIR} (set RELOAD = True to fetch new ones)")
     table = build_education_csv(args.min_year)
     if not table.empty:
         print(table.to_string(index=False))

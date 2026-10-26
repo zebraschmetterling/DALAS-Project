@@ -7,7 +7,8 @@ Bundestag elections: download and process constituency results.
 Step 1: Download btw_kerg.zip ("Endgültige Ergebnisse nach Wahlkreisen aller
            Bundestagswahlen" / "Final results by constituency for all federal
            elections") from the Federal Returning Officer's website and
-           extract it to ../../data/raw.
+           extract it to ../../data/raw. The download only happens if
+           RELOAD = True or --force; otherwise the existing ZIP is used.
 Step 2: For all elections from MIN_YEAR onwards, read the kerg file (not
            kerg2) and write a table with one row per constituency to
            ../../data/interim.
@@ -53,6 +54,10 @@ OUTPUT_NAME = "btw_wahlkreise.csv"
 
 MIN_YEAR = 2013  # inclusive ("from 2013"); can be changed via --min-year
 EXPECTED_WAHLKREISE = 299
+
+# False: only use the ZIP already in RAW_DIR (no internet needed)
+# True:  download the ZIP again and overwrite the existing file (same as --force)
+RELOAD = True
 
 HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; btw-kerg-pipeline/1.0)"}
 
@@ -409,7 +414,14 @@ def main() -> int:
     args = ap.parse_args()
 
     # 1) Download + extract
-    zip_path = download_zip(args.force)
+    zip_path = RAW_DIR / ZIP_NAME
+    if RELOAD or args.force:
+        zip_path = download_zip(force=True)
+    elif zip_path.exists():
+        print(f"RELOAD = False, using existing ZIP: {zip_path}")
+    else:
+        print(f"{zip_path} not found - run once with RELOAD = True.", file=sys.stderr)
+        return 1
     root = extract_zip(zip_path)
 
     # 2) Process kerg files

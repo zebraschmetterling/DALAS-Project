@@ -9,8 +9,8 @@ Summary:
 - Data source: btw_kerg.zip ("Endgültige Ergebnisse nach Wahlkreisen aller
   Bundestagswahlen" / "Final results by constituency for all federal
   elections") from the Federal Returning Officer (bundeswahlleiterin.de).
-- Step 1: Download the ZIP (skipped if it already exists, unless --force) and
-  extract it to ../../data/raw/btw_kerg.
+- Step 1: Download the ZIP (only if RELOAD = True or --force; otherwise the
+  existing ZIP is used) and extract it to ../../data/raw/btw_kerg.
 - Step 2: For all elections from MIN_YEAR onwards, read the kerg file (not
   kerg2) and keep only the aggregate rows: the 16 federal states
   ("gehört zu" = 99) and the federal territory ("Bundesgebiet", empty
@@ -68,6 +68,10 @@ OUTPUT_NAME = "btw_results.csv"
 MIN_YEAR = 2013  # inclusive ("from 2013"); can be changed via --min-year
 EXPECTED_STATES = 16
 FEDERAL_NAME = "Bundesgebiet"
+
+# False: only use the ZIP already in RAW_DIR (no internet needed)
+# True:  download the ZIP again and overwrite the existing file (same as --force)
+RELOAD = True
 
 # Value of the "gehört zu" (belongs to) column that marks a federal state row
 STATE_PARENT = "99"
@@ -454,7 +458,14 @@ def main() -> int:
     args = ap.parse_args()
 
     # 1) Download + extract
-    zip_path = download_zip(args.force)
+    zip_path = RAW_DIR / ZIP_NAME
+    if RELOAD or args.force:
+        zip_path = download_zip(force=True)
+    elif zip_path.exists():
+        print(f"RELOAD = False, using existing ZIP: {zip_path}")
+    else:
+        print(f"{zip_path} not found - run once with RELOAD = True.", file=sys.stderr)
+        return 1
     root = extract_zip(zip_path)
 
     # 2) Process kerg files

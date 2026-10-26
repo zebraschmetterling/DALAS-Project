@@ -8,12 +8,14 @@ What this script does:
   Verian, Forsa, Forschungsgruppe Wahlen, GMS, Infratest dimap, INSA, YouGov).
   Rows/links labeled "Bundestagswahl" (actual election results) are skipped.
 - Takes all surveys from today back to the point where the AfD was founded
-  (6 February 2013), i.e. the cutoff date is 2013-02-06. Older polls are
+  (2013), i.e. the cutoff date is 2013-01-01. Older polls are
   discarded.
 - Drops unnamed (spacer) columns, adds an "Institut" column with the name of
   the institute.
 - Combines all institutes into one DataFrame and saves it as
   "surveys.csv".
+- Every HTML page that is used is stored in data/raw. Later runs read the
+  pages from there; set RELOAD = True to download them again.
 
 Usage: run the file; the result is written to data/interims.
 """
@@ -23,16 +25,34 @@ import bs4
 import pandas as pd
 from io import StringIO
 from urllib.request import Request, urlopen
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from pathlib import Path
 
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "interim"
+RAW_DIR = Path(__file__).resolve().parents[2] / "data" / "raw" / "surveys_bund"
 OVERVIEW_URL = "https://www.wahlrecht.de/umfragen/"
+
+# False: use the HTML files cached in data/raw (download only missing ones)
+# True:  download all pages again and overwrite the cached files
+RELOAD = False
+
+
+def raw_path(url):
+    """Local file in RAW_DIR for a URL, e.g. .../umfragen/forsa.htm -> umfragen_forsa.htm"""
+    path = urlparse(url).path.strip("/")
+    if not path or url.endswith("/"):
+        path = f"{path}/index.html"
+    return RAW_DIR / path.strip("/").replace("/", "_")
 
 
 def fetch_html(url):
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    return bs4.BeautifulSoup(urlopen(req).read(), "lxml")
+    file = raw_path(url)
+    if RELOAD or not file.exists():
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        RAW_DIR.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(urlopen(req).read())
+        time.sleep(1)                            # be polite, only when downloading
+    return bs4.BeautifulSoup(file.read_bytes(), "lxml")
 
 
 def parse_table(page):
@@ -93,7 +113,6 @@ def extract_one_institute(url, name, cutoff):
 
     if df["_date"].min() >= cutoff:              # still need older pages
         for link, label in archive_links:
-            time.sleep(1)
             df = process(fetch_html(link))
             frames.append(df)
             if df["_date"].min() < cutoff:
@@ -113,7 +132,6 @@ def extract_all(cutoff, out="surveys_bund.csv"):
             all_frames.append(extract_one_institute(url, name, cutoff))
         except Exception as e:
             print(f"  FAILED for {name}: {e}")
-        time.sleep(1)
 
     combined = pd.concat(all_frames, ignore_index=True)
 
