@@ -79,3 +79,39 @@ Every preprocessing or modelling choice, with the reason, so it can be defended 
 - using the ISO standard for dates
 - `regierungszufriedenheit.py` added column 'Monat' that extracts the month from the edition title
 - `monthly_controls.py`: Merged the government-satisfaction survey data with the monthly unemployment and asylum figures using a full outer join on the month (ISO format YYYY-MM), so that no month from either source is lost, missing values are left empty. Government satisfaction is defined as the share of respondents who were "zufrieden" plus "sehr zufrieden". Where several surveys fell into the same month only the earliest one is kept so that each month appears exactly once. In the control data rows that contained only a month and no values are removed, because they carry no information.
+- `label.py` is used to clearly assign labels, for now used for party, institute, and east/west classification
+- Berlin is classified as east  
+- `btw_surveys.py`: Federal polls are cleaned into one row per survey with the columns `week` (ISO `YYYY-Www`), `institute` and numeric party shares; institute and party labels come from `labels.py`. Each survey is assigned to the ISO week holding most of its field period (a tie goes to the later week, and the week of the publication date is used if the period is unclear), and surveys before 2013 are dropped. Dashes, `?` and blanks become NaN, and fully identical rows are removed. "Other" is the sum of everything listed under Sonstige plus FW and PIRATEN, and it is filled in as 100 minus all other party shares when missing.
+
+**Party Name:**
+
+| Label  | Real name                    |
+|--------|------------------------------|
+| CDU    | CDU, CSU                     |
+| SPD    | SPD                          |
+| Greens | Die Grünen                   |
+| Linke  | Die Linke                    |
+| FDP    | FDP                          |
+| AfD    | AfD                          |
+| BSW    | BSW                          |
+| FW     | FW                           |
+| Other  | Sonstige (all other parties) |
+
+
+**Institutes:**
+
+| Label | Real name(s)                 |
+|-------|------------------------------|
+| A     | Allensbach                   |
+| B     | Verian, Kantar Public, Emnid |
+| C     | Forsa                        |
+| D     | Forschungsgruppe Wahlen      |
+| E     | GMS                          |
+| F     | Infratest dimap              |
+| G     | INSA                         |
+| H     | Yougov                       |
+
+
+
+
+
