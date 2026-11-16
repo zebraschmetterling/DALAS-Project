@@ -74,4 +74,8 @@ Every preprocessing or modelling choice, with the reason, so it can be defended 
 ## 2026-10-26
 - Added a RELOAD flag to scraping scripts(btw_education, btw_gender_age, btw_results, btw_wahlkreise, ltw_age, ltw_education, ltw_gender, ltw_surveys, regierungszufriedenheit, surveys_bund, surveys_land). Each scraping script has a RELOAD constant at the top. With RELOAD = True, they fetch the data from the sources (again). With RELOAD = False, the scripts don't connect to any website and only use the raw files already saved in data/raw (HTML pages, PDFs, CSV and ZIP files). This makes results reproducible, because the same raw files always give the same output tables, even if the websites change or go offline. It also means the pipeline runs offline and much faster, and the source servers aren't sent the same requests on every run.
 - Same start date (2013-01-01) in all scripts: Set the start of the observation period to 1 January 2013 everywhere, so that all datasets use the same observation period. Some scripts started later before, e.g. on the AfD founding date (2013-02-06).
-- 
+
+## 2026-11-16
+- using the ISO standard for dates
+- `regierungszufriedenheit.py` added column 'Monat' that extracts the month from the edition title
+- `monthly_controls.py`: Merged the government-satisfaction survey data with the monthly unemployment and asylum figures using a full outer join on the month (ISO format YYYY-MM), so that no month from either source is lost, missing values are left empty. Government satisfaction is defined as the share of respondents who were "zufrieden" plus "sehr zufrieden". Where several surveys fell into the same month only the earliest one is kept so that each month appears exactly once. In the control data rows that contained only a month and no values are removed, because they carry no information.
