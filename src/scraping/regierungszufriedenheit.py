@@ -23,9 +23,11 @@ What this script does
    "gar nicht zufrieden" are written to ../../data/interim/regierungszufriedenheit.csv
    with the schema:
 
-       Datum | sehr zufrieden | zufrieden | weniger zufrieden | gar nicht zufrieden
+       Datum | Monat | sehr zufrieden | zufrieden | weniger zufrieden | gar nicht zufrieden
 
    "Datum" is the last day of the survey period ("Erhebungszeitraum").
+   "Monat" is the month named in the PDF (e.g. "DeutschlandTREND März 2026"
+   -> 2026-03).
    PDFs without the question (e.g. state polls, special editions) are skipped,
    as are PDFs that only report aggregated values (e.g. April 2018).
 
@@ -82,7 +84,7 @@ ARCHIVE_URL = f"{OVERVIEW_URL}/archiv/{{year}}"
 
 # False: only extract from the PDFs already in RAW_DIR (no internet needed)
 # True:  crawl tagesschau.de and download all PDFs that are not on disk yet
-RELOAD = True
+RELOAD = False
 
 # First archive year to crawl and earliest publication date of a PDF to download.
 FIRST_YEAR = 2013
@@ -101,7 +103,7 @@ REQUEST_TIMEOUT = 60
 MAX_RETRIES = 3
 USER_AGENT = "Mozilla/5.0 (compatible; regierungszufriedenheit-scraper/1.0)"
 
-CSV_HEADER = ["Datum", "sehr zufrieden", "zufrieden", "weniger zufrieden", "gar nicht zufrieden"]
+CSV_HEADER = ["Datum", "Monat", "sehr zufrieden", "zufrieden", "weniger zufrieden", "gar nicht zufrieden"]
 
 GERMAN_MONTHS = {
     "januar": 1, "februar": 2, "märz": 3, "maerz": 3, "april": 4, "mai": 5, "juni": 6,
@@ -288,6 +290,11 @@ MONTH_YEAR_RE = re.compile(rf"({MONTH_NAMES_RE})\s+(\d{{4}})", re.IGNORECASE)
 # Additional editions ("September 2013 II", "Oktober II 2024") are excluded.
 EDITION_RE = re.compile(
     rf"(?<=DeutschlandTREND)[:\s]*({MONTH_NAMES_RE})\s+(\d{{4}})(?!\s+I{{1,3}}\b)", re.IGNORECASE
+)
+# Month named in the header of every edition, including additional editions and
+# extras, e.g. "DeutschlandTREND EXTRA „Koalitionsvertrag“ Februar 2018", "Oktober II 2024".
+PDF_MONTH_RE = re.compile(
+    rf"DeutschlandTREND.{{0,60}}?\b({MONTH_NAMES_RE})\s+(?:I{{1,3}}\s+)?(\d{{4}})", re.IGNORECASE | re.DOTALL
 )
 SURVEY_DATE_RE = re.compile(
     rf"(\d{{1,2}})\.\s*({MONTH_NAMES_RE})\s*(\d{{4}})", re.IGNORECASE
@@ -493,6 +500,7 @@ class Reading:
     end_date: date
     edition: tuple[int, int] | None  # (year, month) of the edition, e.g. "Mai 2015"
     page_no: int
+    month: str | None = None  # month named in the PDF in ISO format, e.g. "2015-05"
     values: list[int] | None = None
     changes: list[int] | None = None
     reference: tuple[int, int] | None = None  # edition the changes refer to
@@ -527,7 +535,7 @@ def read_pdf(doc: pymupdf.Document, pdf_name: str) -> Reading | None:
                 print(f"  {pdf_name}: survey period not found, skipped")
                 return None
             centers, row_y, step = columns
-            reading = Reading(pdf_name, end_date, edition, page_no)
+            reading = Reading(pdf_name, end_date, edition, page_no, pdf_month(doc))
 
             values = values_from_text(slide_words, centers, row_y, step)
             if plausible(values):
@@ -599,6 +607,15 @@ def survey_end_date(doc: pymupdf.Document) -> date | None:
     return None
 
 
+def pdf_month(doc: pymupdf.Document) -> str | None:
+    """Month named in the PDF ("DeutschlandTREND März 2026" -> "2026-03")."""
+    for page in doc:
+        match = PDF_MONTH_RE.search(page.get_text())
+        if match:
+            return f"{int(match.group(2)):04d}-{GERMAN_MONTHS[match.group(1).lower()]:02d}"
+    return None
+
+
 def build_table(pdf_dir: Path) -> list[list]:
     """Extract one row per survey from all PDFs in pdf_dir."""
     pdf_files = sorted(pdf_dir.glob("*.pdf"))
@@ -633,10 +650,10 @@ def build_table(pdf_dir: Path) -> list[list]:
         if reading.edition and reading.edition not in editions:
             editions[reading.edition] = values
         if reading.end_date in rows:
-            if rows[reading.end_date][1:] != values:
+            if rows[reading.end_date][2:] != values:
                 print(f"  {reading.pdf_name}: different values for {reading.end_date} already stored, kept the first")
             continue
-        rows[reading.end_date] = [reading.end_date.isoformat(), *values]
+        rows[reading.end_date] = [reading.end_date.isoformat(), reading.month or "", *values]
         print(f"  {reading.pdf_name}: {reading.end_date} -> {values} (page {reading.page_no + 1}, {method})")
 
     return [rows[key] for key in sorted(rows)]
