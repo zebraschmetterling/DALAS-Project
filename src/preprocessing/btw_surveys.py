@@ -59,6 +59,9 @@ PARTIES_MERGED_INTO_OTHERS = ["FW", "PIRATEN"]
 # Values that mean "no result" for a party (all dash variants + unknown)
 MISSING_TOKENS = {"", "?", "-", "–", "—", "nan"}
 
+# Surveys whose ISO week lies in an earlier ISO year are dropped
+MIN_YEAR = 2013
+
 # A field period longer than this is considered implausible -> use Datum instead
 MAX_PERIOD_DAYS = 21
 
@@ -248,14 +251,19 @@ def process(raw: pd.DataFrame) -> pd.DataFrame:
     n_fallback = sum(not w[2] for w in weeks)
     print(f"Week taken from 'Datum' (Zeitraum missing/unclear) for {n_fallback} rows.")
 
-    # 7. Labels for institutes and parties (from labels.py)
+    # 7. Keep only surveys categorized in ISO year MIN_YEAR or later
+    too_early = pd.Series([year < MIN_YEAR for year, _, _ in weeks], index=df.index)
+    df = df[~too_early].reset_index(drop=True)
+    print(f"Dropped {too_early.sum()} rows categorized before {MIN_YEAR}.")
+
+    # 8. Labels for institutes and parties (from labels.py)
     df["institute"] = apply_labels(df[COL_INSTITUTE], institute_label, "institute")
     party_label_map = dict(
         zip(party_cols, apply_labels(pd.Series(party_cols), get_party_label, "party"))
     )
     df = df.rename(columns=party_label_map)
 
-    # 8. Final schema: | week | institute | party shares |
+    # 9. Final schema: | week | institute | party shares |
     result = df[["week", "institute", *party_label_map.values()]]
     return result.sort_values(["week", "institute"]).reset_index(drop=True)
 
