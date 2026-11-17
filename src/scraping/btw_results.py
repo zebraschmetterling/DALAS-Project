@@ -84,7 +84,7 @@ OTHER = "Sonstige"
 
 # Same schema as btw_wahlkreise.csv, with "Gebiet" instead of "Wahlkreis"
 FIELDNAMES = (
-    ["Jahr", "Gebiet", "Wahlberechtigte", "Wählende" ]
+    ["Jahr", "Gebiet", "Wahlberechtigte", "Wählende", "Gültige Erststimmen", "Gültige Zweitstimmen"]
     + [f"Erststimmen {g}" for g in GROUPS + [OTHER]]
     + [f"Zweitstimmen {g}" for g in GROUPS + [OTHER]]
 )
@@ -412,6 +412,8 @@ def parse_kerg_file(path: Path) -> tuple[int | None, list[dict]]:
             "Gebiet": gebiet,
             "Wahlberechtigte": wahlberechtigte,
             "Wählende": waehlende,
+            "Gültige Erststimmen": cell(row, meta.get("gueltige", {}).get("erst")),
+            "Gültige Zweitstimmen": cell(row, meta.get("gueltige", {}).get("zweit")),
             # Direct mandates only exist per constituency, so this stays empty
             "Direkt gewählter Abgeordnete": "",
             "_sort": area_sort_key(int(nr)),

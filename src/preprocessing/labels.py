@@ -72,7 +72,7 @@ BUNDESLAND_CLASSIFICATION : dict[str, str] = {
     "mecklenburg-vorpommern": "E",
     "niedersachsen": "W",
     "nordrhein-westfalen": "W",
-    "rheinland-Pfalz": "W",
+    "rheinland-pfalz": "W",
     "saarland": "W",
     "sachsen": "E",
     "sachsen-anhalt": "E",
@@ -89,3 +89,40 @@ def get_bundesland_classification (name: str) -> str | None:
         return BUNDESLAND_CLASSIFICATION[name]
     else:
         return None
+
+
+"""
+========= BUNDESLAND NUMBER =========
+"""
+
+BUNDESLAND_NUMBER: dict[str, str] = {
+   "08" : "Baden-Württemberg",
+   "09" : "Bayern",
+   "11" : "Berlin",
+   "12" : "Brandenburg",
+   "04" : "Bremen",
+   "02" : "Hamburg",
+   "06" : "Hessen",
+   "13" : "Mecklenburg-Vorpommern",
+   "03" : "Niedersachsen",
+   "05" : "Nordrhein-Westfalen",
+   "07" : "Rheinland-Pfalz",
+   "10" : "Saarland",
+   "14" : "Sachsen",
+   "15" : "Sachsen-Anhalt",
+   "01" : "Schleswig-Holstein",
+   "16" : "Thüringen",
+
+}
+
+
+def get_bundesland(name: str) -> str | None:
+    if not name:
+        return None
+    name = name.strip().lower()
+    if name in BUNDESLAND_NUMBER:
+        return BUNDESLAND_NUMBER[name]
+    else:
+        return None
+
+

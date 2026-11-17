@@ -112,6 +112,12 @@ Every preprocessing or modelling choice, with the reason, so it can be defended 
 | H     | Yougov                       |
 
 
+## 2026-11-17
+- `monthly_controls.py` min gap is now three months, because two months gap in data also happened when gouvernement was not changing
+- `scrapping/btw_results.py` added gültige Stimmen column (valid votes) to be able to calculated shares in processing step
+- `scrapping/btw_wahlkreise.py` added gültige Stimmen column (valid votes) to be able to calculated shares in processing step. Add gehört zu column (=belongs to), the data provides a number that is assigned to a state.
+- `label.py` new method to convert this number to Bundesland (for btw_wahlkreise processing step)
+- 
 
 
 

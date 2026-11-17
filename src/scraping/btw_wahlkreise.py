@@ -66,7 +66,7 @@ GROUPS = ["CDU/CSU", "SPD", "Grüne", "FDP", "Linke", "AfD", "FW", "BSW"]
 OTHER = "Sonstige"
 
 FIELDNAMES = (
-    ["Jahr", "Wahlkreis", "Wahlberechtigte", "Wählende", "Direkt gewählter Abgeordnete"]
+    ["Jahr", "Wahlkreis", "gehört zu", "Wahlberechtigte", "Wählende", "Gültige Erststimmen", "Gültige Zweitstimmen", "Direkt gewählter Abgeordnete"]
     + [f"Erststimmen {g}" for g in GROUPS + [OTHER]]
     + [f"Zweitstimmen {g}" for g in GROUPS + [OTHER]]
 )
@@ -386,8 +386,11 @@ def parse_kerg_file(path: Path) -> tuple[int | None, list[dict], int]:
         rec = {
             "Jahr": year,
             "Wahlkreis": gebiet,
+            "gehört zu": parent,
             "Wahlberechtigte": wahlberechtigte,
             "Wählende": waehlende,
+            "Gültige Erststimmen": cell(row, meta.get("gueltige", {}).get("erst")),
+            "Gültige Zweitstimmen": cell(row, meta.get("gueltige", {}).get("zweit")),
             "Direkt gewählter Abgeordnete": winner or "",
             "_nr": int(nr),
         }
