@@ -120,8 +120,6 @@ Every preprocessing or modelling choice, with the reason, so it can be defended 
 
 ## 2026-11-18
 - `scrapping/btw_wahlkreise.py` added Number column that states the number of the constituency to be able to join on the number rather than the name in processing steps.
-
-
-
-
-
+- `preprocessing/btw_results.py` combines the interim Bundestag election results at state level (btw_results.csv) and constituency level (btw_wahlkreise.csv) into one table with federal, state and constituency rows (data/processed/btw_results.csv). For each row it computes voter turnout and every party's share of the first and second votes as percentages of the valid votes. Party names and state codes are replaced by the labels from labels.py, and the votes of the Freie Wähler are counted as "Sonstige". If a year has no federal total, the script adds up the state results instead. Each constituency row keeps its Wahlkreis number as a string (to preserve leading zeros) and the party of the directly elected candidate.
+- `wahlkreise_karte.py` downloads generalized constituency (Wahlkreis) shapefiles for the 2013, 2017, 2021, and 2025 Bundestag elections from the Bundeswahlleiterin and stores them separately per year in data/interim/wahlkreise_karte/ to preserve boundary changes across election cycles. To ensure consistency for downstream mapping and data joins, all files are standardized to the WGS84 coordinate reference system (EPSG:4326)—including reprojecting the 2013 UTM32 dataset—and formatted with an identical schema.
+- `results_map.py` creates an interactive HTML map of the German federal election results (2013, 2017, 2021, 2025). It joins the processed results from `btw_results.csv` with the constituency shapefiles via the constituency number, and colours each constituency by the party with the most first or second votes (the label "Other" is never treated as a winner). The page lets the user select the year, vote type and federal state. Clicking a constituency shows its detailed results, and without a click the nationwide or state results are shown, with each state and constituency labelled as West or East via `labels.py`.

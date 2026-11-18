@@ -8,3 +8,4 @@ pdfplumber
 torch
 transformers
 numpy
+geopandas
