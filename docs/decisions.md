@@ -117,7 +117,11 @@ Every preprocessing or modelling choice, with the reason, so it can be defended 
 - `scrapping/btw_results.py` added gültige Stimmen column (valid votes) to be able to calculated shares in processing step
 - `scrapping/btw_wahlkreise.py` added gültige Stimmen column (valid votes) to be able to calculated shares in processing step. Add gehört zu column (=belongs to), the data provides a number that is assigned to a state.
 - `label.py` new method to convert this number to Bundesland (for btw_wahlkreise processing step)
-- 
+
+## 2026-11-18
+- `scrapping/btw_wahlkreise.py` added Number column that states the number of the constituency to be able to join on the number rather than the name in processing steps.
+
+
 
 
 

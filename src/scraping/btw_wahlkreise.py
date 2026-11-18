@@ -57,7 +57,7 @@ EXPECTED_WAHLKREISE = 299
 
 # False: only use the ZIP already in RAW_DIR (no internet needed)
 # True:  download the ZIP again and overwrite the existing file (same as --force)
-RELOAD = True
+RELOAD = False
 
 HTTP_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; btw-kerg-pipeline/1.0)"}
 
@@ -66,7 +66,7 @@ GROUPS = ["CDU/CSU", "SPD", "Grüne", "FDP", "Linke", "AfD", "FW", "BSW"]
 OTHER = "Sonstige"
 
 FIELDNAMES = (
-    ["Jahr", "Wahlkreis", "gehört zu", "Wahlberechtigte", "Wählende", "Gültige Erststimmen", "Gültige Zweitstimmen", "Direkt gewählter Abgeordnete"]
+    ["Jahr", "Nr", "Wahlkreis", "gehört zu", "Wahlberechtigte", "Wählende", "Gültige Erststimmen", "Gültige Zweitstimmen", "Direkt gewählter Abgeordnete"]
     + [f"Erststimmen {g}" for g in GROUPS + [OTHER]]
     + [f"Zweitstimmen {g}" for g in GROUPS + [OTHER]]
 )
@@ -385,6 +385,7 @@ def parse_kerg_file(path: Path) -> tuple[int | None, list[dict], int]:
 
         rec = {
             "Jahr": year,
+            "Nr": nr,
             "Wahlkreis": gebiet,
             "gehört zu": parent,
             "Wahlberechtigte": wahlberechtigte,
