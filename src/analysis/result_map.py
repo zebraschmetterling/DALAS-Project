@@ -155,6 +155,7 @@ def build_year(year: int, results: pd.DataFrame, parties: list[str]) -> dict:
 
     features = []
     missing = []
+    outline_parts = []  # (state, geometry) of every constituency, merged to state outlines later
     for _, shape in shapes.iterrows():
         number = int(shape["WKR_NR"])
 
@@ -166,6 +167,8 @@ def build_year(year: int, results: pd.DataFrame, parties: list[str]) -> dict:
 
         first = get_shares(row, FIRST_VOTE_PREFIX, parties)
         second = get_shares(row, SECOND_VOTE_PREFIX, parties)
+
+        outline_parts.append({"state": clean(row["State"]), "geometry": shape.geometry})
 
         features.append({
             "type": "Feature",
@@ -200,6 +203,10 @@ def build_year(year: int, results: pd.DataFrame, parties: list[str]) -> dict:
     if federal is None:
         print(f"WARNING: [{year}] No federal result found")
 
+    # Outline of every state: merge the constituencies of each state into one shape
+    outlines = gpd.GeoDataFrame(outline_parts, geometry="geometry", crs=shapes.crs).dropna(subset=["state"])
+    outlines = outlines.dissolve(by="state")
+
     # State results including the West / East classification
     states = {}
     for _, row in year_all[year_all["Level"] == "state"].iterrows():
@@ -208,6 +215,8 @@ def build_year(year: int, results: pd.DataFrame, parties: list[str]) -> dict:
         if region is None:
             print(f"WARNING: [{year}] No West / East classification for state '{name}'")
         states[name] = build_area(row, name, region, parties)
+        if name in outlines.index:
+            states[name]["outline"] = outlines.loc[name, "geometry"].__geo_interface__
 
     return {
         "map": {"type": "FeatureCollection", "features": features},
@@ -283,6 +292,7 @@ let currentYear = null;
 let currentVote = "first";
 let layer = null;
 let selectedNumber = null;
+let outlineLayer = null;         // outline of the selected state
 let currentArea = "";             // "" = nationwide, otherwise the name of a federal state
 
 const map = L.map("map", { zoomSnap: 0.25 });
@@ -369,6 +379,21 @@ function showArea() {
     <p class="muted">Click on a constituency to see its results.</p>`;
 }
 
+// Circle the selected state with the same highlight colour as a selected constituency
+function updateOutline() {
+  if (outlineLayer) {
+    map.removeLayer(outlineLayer);
+    outlineLayer = null;
+  }
+  if (currentArea === "" || selectedNumber !== null) return;
+  const area = DATA[currentYear].states[currentArea];
+  if (!area || !area.outline) return;
+  outlineLayer = L.geoJSON(area.outline, {
+    style: { fill: false, color: "#ff00ff", weight: 3 },
+    interactive: false,   // clicks still reach the constituencies below
+  }).addTo(map);
+}
+
 function drawYear(fitBounds) {
   if (layer) map.removeLayer(layer);
   layer = L.geoJSON(DATA[currentYear].map, {
@@ -380,6 +405,7 @@ function drawYear(fitBounds) {
         layer.setStyle(styleOf);
         lyr.bringToFront();
         showDetails(feature);
+        updateOutline();
       });
     },
   }).addTo(map);
@@ -394,6 +420,7 @@ function drawYear(fitBounds) {
     selectedNumber = null;
     showArea();
   }
+  updateOutline();
 }
 
 // ---- Controls ----
@@ -418,6 +445,7 @@ areaSelect.addEventListener("change", () => {
   selectedNumber = null;
   layer.setStyle(styleOf);
   showArea();
+  updateOutline();
 });
 
 yearSelect.addEventListener("change", () => {
