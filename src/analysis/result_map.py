@@ -302,7 +302,7 @@ function colorOf(party) {
 }
 
 function winnerOf(feature) {
-  return currentVote === "first" ? feature.properties.winner_first : feature.properties.winner_second;
+  return currentVote === "first" ? feature.properties.direct_mandate : feature.properties.winner_second;
 }
 
 function styleOf(feature) {
