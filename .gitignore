@@ -8,3 +8,4 @@ reports/**/*.log
 reports/**/*.out
 reports/**/*.synctex.gz
 .idea
+.venv/
