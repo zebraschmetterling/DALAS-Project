@@ -365,6 +365,7 @@ erDiagram
 | `topics_weekly` | one row per ISO week | `tagesschau_archiv.csv` via `burst.py` | Q1 second, coarser treatment set: topics that dominated German news in a week but have no Wikipedia event, e.g. domestic debates. Not yet built |
 | `votes_by_group` | one row per election, level, group type, group, party | `btw_gender_age.csv`, `btw_education.csv`, `ltw_age.csv`, `ltw_gender.csv`, `ltw_education.csv`, `tagesschau_umfrage-{alter,werwas,afd}.csv` | Q2 descriptive trend, flows between parties within a group |
 | `election_results` | one row per election, level, bundesland, party | `btw_results.csv`, `ltw_results.csv` | ground truth vs polls; Q1 and Q2 context |
+| `btw_strukturdaten` | one row per election and constituency (1196) | `btw_strukturdaten.csv` via `src/preprocessing/btw_strukturdaten.py` | Q2 regression, map. Built. English column names; keys `Date`, `State`, `Constituency number`, `Constituency` as in processed `btw_results.csv` (join on Date + Constituency number, valid within one election only); `Region` (East/West); vehicle columns dropped; flags `Abitur incl. Fachhochschulreife` (definition break 2013 vs. 2017+) and `Area-wide values` (values repeated across the constituencies of a city or district); income and GDP empty for 2013 (decisions 2026-11-20) |
 | `wahlkreise` | one row per Wahlkreis and election | `btw_wahlkreise.csv` (Erst- und Zweitstimmen, Direktmandat), `btw_strukturdaten.csv` (join on constituency name after dash normalisation, or number) | Q2 regression, map, direct mandates |
 
 ### Notes
